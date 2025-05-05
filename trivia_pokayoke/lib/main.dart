@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:trivia_pokayoke/ContabilidadPage.dart';
 import 'package:trivia_pokayoke/EconomiaPage.dart';
-
+import 'package:trivia_pokayoke/MarketingPage.dart';
 void main() {
   runApp(const TriviaApp());
 }
@@ -93,6 +93,31 @@ class HomePage extends StatelessWidget {
                   },
                   child: const Text(
                     'Contabilidad',
+                    style: TextStyle(fontSize: 18, color: Colors.white),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue[800],
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const MarketingPage(),
+                      ),
+                    );
+                  },
+                  child: const Text(
+                    'Marketing',
                     style: TextStyle(fontSize: 18, color: Colors.white),
                   ),
                 ),
