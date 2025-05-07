@@ -1,0 +1,26 @@
+{
+    "configurations": [
+        
+        {
+            "name": "Launch Edge",
+            "request": "launch",
+            "type": "msedge",
+            "url": "http://localhost:8080",
+            "webRoot": "${workspaceFolder}"
+        },
+        {
+            "name": "Attach to Edge",
+            "port": 9222,
+            "request": "attach",
+            "type": "msedge",
+            "webRoot": "${workspaceFolder}"
+        },
+        {
+            "name": "Flutter (lib\\HomePage.dart)",
+            "type": "dart",
+            "request": "launch",
+            "cwd": "trivia_pokayoke",
+            "program": "lib\\HomePage.dart"
+        }
+    ]
+}

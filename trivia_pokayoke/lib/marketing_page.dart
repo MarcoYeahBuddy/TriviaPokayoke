@@ -1,30 +1,13 @@
 import 'package:flutter/material.dart';
 
-void main() {
-  runApp(const EconomiaPage());
-}
-
-class EconomiaPage extends StatelessWidget {
-  const EconomiaPage({super.key});
+class MarketingPage extends StatelessWidget {
+  const MarketingPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Trivia Economía',
-      debugShowCheckedModeBanner: false,
-      home: const TriviaPage(),
-    );
-  }
-}
-
-class TriviaPage extends StatelessWidget {
-  const TriviaPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    const backgroundColor = Color(0xFF8D6467); // Marrón rosado exterior
-    const contentColor = Color(0xFFB36B29); // Naranja-café principal
-    const panelColor = Color(0xFF7A441C); // Panel oscuro
+    const backgroundColor = Color(0xFF1B2F5C); // Azul oscuro exterior
+    const contentColor = Color(0xFF3D4E85); // Azul intermedio
+    const panelColor = Color(0xFF2E3A5F); // Azul oscuro panel
     const textColor = Colors.white;
 
     return Scaffold(
@@ -37,7 +20,7 @@ class TriviaPage extends StatelessWidget {
             gradient: const LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [Color(0xFFCC8131), Color(0xFF7A441C)],
+              colors: [Color(0xFF4A69BD), Color(0xFF1B2F5C)],
             ),
             borderRadius: BorderRadius.circular(10),
           ),
@@ -52,7 +35,7 @@ class TriviaPage extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Text(
-                  'ECONOMIA',
+                  'MARKETING',
                   style: TextStyle(
                     color: textColor,
                     fontSize: 24,
@@ -79,11 +62,14 @@ class TriviaPage extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 20),
-              // Carita feliz (placeholder)
+              // Emoji animado
               const CircleAvatar(
                 radius: 40,
-                backgroundColor: Colors.yellow,
-                child: Icon(Icons.emoji_emotions, color: Colors.black, size: 40),
+                backgroundColor: Colors.grey,
+                child: Text(
+                  '🧠',
+                  style: TextStyle(fontSize: 40),
+                ),
               ),
               const SizedBox(height: 20),
               // Contenedor de pregunta y respuestas
@@ -104,7 +90,7 @@ class TriviaPage extends StatelessWidget {
                         margin: const EdgeInsets.only(bottom: 16),
                         color: contentColor,
                         child: const Text(
-                          '¿Cuál es el objetivo principal de la economía?',
+                          '¿Qué es el marketing digital?',
                           style: TextStyle(
                             fontSize: 18,
                             color: textColor,
@@ -113,29 +99,33 @@ class TriviaPage extends StatelessWidget {
                         ),
                       ),
                       // Opciones
-                      ...['Aumentar el desempleo', 'Maximizar la producción', 'Reducir el consumo', 'Imprimir dinero sin límite']
-                          .map(
-                            (option) => Container(
-                              margin: const EdgeInsets.symmetric(vertical: 6),
-                              child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: contentColor,
-                                  padding: const EdgeInsets.all(12),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                ),
-                                onPressed: () {},
-                                child: Text(
-                                  option,
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    color: textColor,
-                                  ),
-                                ),
+                      ...[
+                        'Publicidad en internet',
+                        'Contabilidad online',
+                        'Gestión de personal',
+                        'Análisis financiero'
+                      ].map(
+                        (option) => Container(
+                          margin: const EdgeInsets.symmetric(vertical: 6),
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: contentColor,
+                              padding: const EdgeInsets.all(12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            onPressed: () {},
+                            child: Text(
+                              option,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                color: textColor,
                               ),
                             ),
                           ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
