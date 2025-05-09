@@ -2,21 +2,13 @@ import 'package:flutter/material.dart';
 import 'controllers/trivia_controller.dart';
 import 'models/trivia_model.dart';
 import 'widgets/question_card.dart';
-import 'home_page.dart';
-
-void main() {
-  runApp(const EconomiaPage());
-}
 
 class EconomiaPage extends StatelessWidget {
   const EconomiaPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: TriviaScreen(),
-    );
+    return const TriviaScreen();
   }
 }
 
@@ -65,7 +57,7 @@ class _TriviaScreenState extends State<TriviaScreen> {
                   controller.nextQuestion();
                 });
               } else {
-                final score = controller.getScore(); // Assuming getScore() exists
+                final score = controller.getScore();
                 showDialog(
                   context: context,
                   builder: (context) => AlertDialog(
@@ -73,13 +65,7 @@ class _TriviaScreenState extends State<TriviaScreen> {
                     content: Text('Tu puntaje es: $score/${controller.questions.length}'),
                     actions: [
                       TextButton(
-                        onPressed: () {
-                          Navigator.pop(context); // Close score dialog
-                          Navigator.of(context).pushAndRemoveUntil(
-                            MaterialPageRoute(builder: (context) => const HomePage()),
-                            (route) => false,
-                          );
-                        },
+                        onPressed: () => Navigator.pop(context),
                         child: const Text('Aceptar'),
                       ),
                     ],

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "506745409286",
+    "project_id": "trivia-pokayoke",
+    "storage_bucket": "trivia-pokayoke.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:506745409286:android:d53d1d6f14eecbe49b9887",
+        "android_client_info": {
+          "package_name": "com.example.trivia_pokayoke"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBAix7Frlh-NHZi1KWcUE4YaBSr0VJX7VM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

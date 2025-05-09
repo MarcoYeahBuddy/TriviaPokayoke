@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
-import 'home_page.dart'; // Para navegar al HomePage después del login
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+import 'home_page.dart';
+import 'register.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -13,20 +17,56 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _passController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
-  void _login() {
+  void _login() async {
     if (_formKey.currentState!.validate()) {
-      final user = _userController.text.trim();
-      final pass = _passController.text;
+      final email = _userController.text.trim();
+      final password = _passController.text;
 
-      if (user == 'admin' && pass == 'admin') {
+      try {
+        final userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+          email: email,
+          password: password,
+        );
+
+        final uid = userCredential.user!.uid;
+        final docSnapshot = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(uid)
+            .get();
+
+        final data = docSnapshot.data();
+        if (data == null || !data.containsKey('nombre') || !data.containsKey('apellido')) {
+          throw FirebaseAuthException(code: 'invalid-profile', message: 'Faltan datos del perfil.');
+        }
+
+        final String nombre = data['nombre'];
+        final String apellido = data['apellido'];
+
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const HomePage()),
+          MaterialPageRoute(
+            builder: (context) => HomePage(nombre: nombre, apellido: apellido),
+          ),
         );
-      } else {
+      } on FirebaseAuthException catch (e) {
+        String errorMessage;
+        switch (e.code) {
+          case 'user-not-found':
+            errorMessage = 'No se encontró un usuario con ese correo.';
+            break;
+          case 'wrong-password':
+            errorMessage = 'Contraseña incorrecta.';
+            break;
+          case 'invalid-email':
+            errorMessage = 'Correo electrónico inválido.';
+            break;
+          default:
+            errorMessage = 'Error: ${e.message}';
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Usuario o contraseña incorrectos'),
+          SnackBar(
+            content: Text(errorMessage),
             backgroundColor: Colors.redAccent,
           ),
         );
@@ -37,7 +77,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF1B2F5C), // Azul oscuro
+      backgroundColor: const Color(0xFF1B2F5C),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -57,17 +97,15 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 40),
 
-                  // Campo usuario
                   TextFormField(
                     controller: _userController,
                     style: const TextStyle(color: Colors.white),
-                    decoration: _inputDecoration('Usuario'),
+                    decoration: _inputDecoration('Correo electrónico'),
                     validator: (value) =>
-                        value == null || value.isEmpty ? 'Ingrese su usuario' : null,
+                        value == null || value.isEmpty ? 'Ingrese su correo' : null,
                   ),
                   const SizedBox(height: 20),
 
-                  // Campo contraseña
                   TextFormField(
                     controller: _passController,
                     obscureText: true,
@@ -78,7 +116,6 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 30),
 
-                  // Botón login
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
@@ -94,6 +131,21 @@ class _LoginPageState extends State<LoginPage> {
                         'Entrar',
                         style: TextStyle(fontSize: 18, color: Colors.white),
                       ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const RegisterPage(),
+                        ),
+                      );
+                    },
+                    child: const Text(
+                      '¿No tienes cuenta? Regístrate',
+                      style: TextStyle(color: Colors.white70, fontSize: 14),
                     ),
                   ),
                 ],

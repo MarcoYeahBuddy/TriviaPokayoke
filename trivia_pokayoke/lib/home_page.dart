@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'login.dart';
 import 'contabilidad_page.dart';
 import 'economia_page.dart';
-import 'marketing_page.dart'; // marketing
+import 'marketing_page.dart';
 import 'perfil_page.dart';
 import 'ajustes_page.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  final String nombre;
+  final String apellido;
+
+  const HomePage({super.key, required this.nombre, required this.apellido});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -23,7 +26,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // Página de contenido dinámico según BottomNavigationBar
   Widget _getBody() {
     if (_selectedIndex == 0) {
       return _buildPruebasContent();
@@ -61,13 +63,13 @@ class _HomePageState extends State<HomePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Encabezado
+          // Encabezado dinámico
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Hola\nSergio Villegas',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              Text(
+                'Hola\n${widget.nombre} ${widget.apellido}',
+                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
               IconButton(
                 icon: const Icon(Icons.logout, color: Colors.red),
@@ -91,11 +93,7 @@ class _HomePageState extends State<HomePage> {
           ),
           const SizedBox(height: 16),
 
-          // Categorías
-          const Text(
-            'Categoría:',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
+          const Text('Categoría:', style: TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
@@ -108,7 +106,6 @@ class _HomePageState extends State<HomePage> {
           ),
           const SizedBox(height: 16),
 
-          // Lista
           Expanded(
             child: ListView.builder(
               itemCount: subjects.length,
