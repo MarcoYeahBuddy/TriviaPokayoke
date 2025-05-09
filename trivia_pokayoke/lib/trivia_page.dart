@@ -22,6 +22,7 @@ class _TriviaScreenState extends State<TriviaScreen> {
 
   String materia = '';
   String docente = '';
+  String carrera = '';
   Color panelColor = const Color(0xFF7A441C);
   Color backgroundColor = const Color(0xFF8D6467);
 
@@ -52,10 +53,11 @@ class _TriviaScreenState extends State<TriviaScreen> {
     setState(() {
       materia = data['materia'] ?? 'General';
       docente = data['docente'] ?? 'Sin docente';
+      carrera = data['carrera'] ?? 'General';
       remainingSeconds = (data['duracion_aprox'] ?? 5) * 60;
 
-      backgroundColor = _backgroundForMateria(materia);
-      panelColor = _panelForMateria(materia);
+      backgroundColor = _backgroundForMateria(carrera);
+      panelColor = _panelForMateria(carrera);
 
       controller = TriviaController(questions);
       isLoading = false;
