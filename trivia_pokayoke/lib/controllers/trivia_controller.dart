@@ -22,11 +22,10 @@ class TriviaController {
 
   int getScore() {
     int score = 0;
-    for (int i = 0; i <= currentIndex; i++) {
-      if (questions[i].correctIndex == questions[i].selectedIndex) {
-        score++;
-      }
+    for (var q in questions) {
+      if (q.selectedIndex == q.correctIndex) score++;
     }
     return score;
   }
+
 }

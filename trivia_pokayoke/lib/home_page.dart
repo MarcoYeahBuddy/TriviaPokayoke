@@ -1,10 +1,10 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'login.dart';
-import 'contabilidad_page.dart';
-import 'economia_page.dart';
-import 'marketing_page.dart';
 import 'perfil_page.dart';
 import 'ajustes_page.dart';
+import 'trivia_page.dart';
+import 'subirTriviademo.dart';
 
 class HomePage extends StatefulWidget {
   final String nombre;
@@ -36,130 +36,180 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Widget _buildPruebasContent() {
-    final subjects = [
-      {
-        'title': 'Economía',
-        'duration': '2 h 45 min',
-        'widget': const EconomiaPage(),
-        'color': Colors.orangeAccent.shade100
-      },
-      {
-        'title': 'Contabilidad',
-        'duration': '3 h 30 min',
-        'widget': const ContabilidadPage(),
-        'color': Colors.greenAccent.shade100
-      },
-      {
-        'title': 'Marketing',
-        'duration': '2 h 10 min',
-        'widget': const MarketingPage(),
-        'color': Colors.lightBlueAccent.shade100
-      },
-    ];
-
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Encabezado dinámico
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Hola\n${widget.nombre} ${widget.apellido}',
-                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              IconButton(
-                icon: const Icon(Icons.logout, color: Colors.red),
-                onPressed: _logout,
-              )
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Buscar
-          TextField(
-            decoration: InputDecoration(
-              hintText: 'Buscar cursos',
-              prefixIcon: const Icon(Icons.search),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
-              filled: true,
-              fillColor: Colors.white,
+Widget _buildPruebasContent() {
+  return Padding(
+    padding: const EdgeInsets.all(16),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Encabezado dinámico
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Hola\n${widget.nombre} ${widget.apellido}',
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
+            IconButton(
+              icon: const Icon(Icons.logout, color: Colors.red),
+              onPressed: _logout,
+            ),
+            ElevatedButton(
+            onPressed: subirTriviaDemo,
+            child: const Text('Subir trivia demo'),
           ),
-          const SizedBox(height: 16),
 
-          const Text('Categoría:', style: TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            children: const [
-              Chip(label: Text('#CPA')),
-              Chip(label: Text('#ADM')),
-              Chip(label: Text('#MAT')),
-              Chip(label: Text('#ECO')),
-            ],
+            
+          ],
+        ),
+        const SizedBox(height: 16),
+
+        // Buscar
+        TextField(
+          decoration: InputDecoration(
+            hintText: 'Buscar cursos',
+            prefixIcon: const Icon(Icons.search),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+            filled: true,
+            fillColor: Colors.white,
           ),
-          const SizedBox(height: 16),
+        ),
+        const SizedBox(height: 16),
 
-          Expanded(
-            child: ListView.builder(
-              itemCount: subjects.length,
-              itemBuilder: (context, index) {
-                final subject = subjects[index];
-                return GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => subject['widget'] as Widget),
-                    );
-                  },
-                  child: Card(
-                    margin: const EdgeInsets.only(bottom: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Column(
-                      children: [
-                        Container(
-                          height: 150,
-                          decoration: BoxDecoration(
-                            color: subject['color'] as Color,
-                            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                          ),
-                          child: const Center(child: Icon(Icons.school, size: 50)),
+        const Text('Categoría:', style: TextStyle(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          children: const [
+            Chip(label: Text('#CPA')),
+            Chip(label: Text('#ADM')),
+            Chip(label: Text('#MAT')),
+            Chip(label: Text('#ECO')),
+          ],
+        ),
+        const SizedBox(height: 16),
+
+        // Cargar cursos desde Firestore
+        Expanded(
+          child: StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance.collection('trivias').snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.hasError) {
+                return const Center(child: Text('Error al cargar cursos'));
+              }
+
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              final docs = snapshot.data!.docs;
+
+              if (docs.isEmpty) {
+                return const Center(child: Text('No hay cursos disponibles aún.'));
+              }
+
+              return ListView.builder(
+                itemCount: docs.length,
+                itemBuilder: (context, index) {
+                   final doc = docs[index];
+                  final data = doc.data() as Map<String, dynamic>;
+                  final docId = doc.id;
+
+                  final materia = data['materia'] ?? 'Materia';
+                  final duracion = '${data['duracion_aprox'] ?? 0} min';
+                  final docente = data['docente'] ?? 'Sin docente';
+                  final sigla = data['sigla'] ?? '';
+                  final color = _colorForMateria(materia); // función opcional para color
+                  
+
+                  return GestureDetector(
+                    onTap: () {
+                      debugPrint('Selected trivia ID: $docId'); // Debug log
+                      showDialog(
+                        context: context,
+                        builder: (_) => AlertDialog(
+                          title: Text(materia),
+                          content: Text('Docente: $docente\nSigla: $sigla\nDuración: $duracion\n\n¿Listo para comenzar la trivia?'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text('Cancelar'),
+                            ),
+                            ElevatedButton(
+                              onPressed: () {
+                                Navigator.pop(context); // Cierra el diálogo
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => TriviaScreen(triviaId: docId), // Pass correct ID
+                                  ),
+                                );
+                              },
+                              child: const Text('¡Empezar!'),
+                            ),
+                          ],
                         ),
-                        Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                subject['title'] as String,
-                                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                              ),
-                              Text(
-                                subject['duration'] as String,
-                                style: const TextStyle(color: Colors.grey),
-                              ),
-                            ],
+                      );
+                    },
+                    child: Card(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Column(
+                        children: [
+                          Container(
+                            height: 150,
+                            decoration: BoxDecoration(
+                              color: color,
+                              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                            ),
+                            child: const Center(child: Icon(Icons.school, size: 50)),
                           ),
-                        )
-                      ],
+                          Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  materia,
+                                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                ),
+                                Text(
+                                  duracion,
+                                  style: const TextStyle(color: Colors.grey),
+                                ),
+                              ],
+                            ),
+                          )
+                        ],
+                      ),
                     ),
-                  ),
-                );
-              },
-            ),
-          )
-        ],
-      ),
-    );
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ],
+    ),
+  );
+}
+Color _colorForMateria(String materia) {
+  switch (materia.toLowerCase()) {
+    case 'economía':
+      return Colors.orangeAccent.shade100;
+    case 'contabilidad':
+      return Colors.greenAccent.shade100;
+    case 'marketing':
+      return Colors.lightBlueAccent.shade100;
+    default:
+      return Colors.grey.shade300;
   }
+}
+
 
   @override
   Widget build(BuildContext context) {
