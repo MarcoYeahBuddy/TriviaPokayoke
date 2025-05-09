@@ -2,63 +2,113 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 void subirTriviaDemo() async {
-  final triviaId = 'eco_trivia_01'; // ID personalizado, o usa .add() para autogen
-
-  final triviaData = {
-    'anio': 2024,
-    'docente': 'Dra. María López',
-    'duracion_aprox': 5,
-    'imagen_url': 'null',
-    'materia': 'Economía',
-    'nivel': 'básico',
-    'semestre': 'II',
-    'sigla': 'ECO-101',
-    'preguntas': {
-      'p1': {
-        'pregunta': '¿Cuál es el objetivo principal de la economía?',
-        'opciones': [
-          'Aumentar el desempleo',
-          'Maximizar la producción',
-          'Reducir el consumo',
-          'Imprimir dinero sin límite'
-        ],
-        'respuesta': 'Maximizar la producción',
-        'explicación': 'La economía busca asignar eficientemente los recursos escasos para maximizar la producción y el bienestar.'
-      },
-      'p2': {
-        'pregunta': '¿Qué mide el PIB?',
-        'opciones': [
-          'Inflación',
-          'Crecimiento demográfico',
-          'Producción económica',
-          'Exportaciones'
-        ],
-        'respuesta': 'Producción económica',
-        'explicación': 'El PIB mide el valor total de los bienes y servicios producidos en un país.'
-      },
-      'p3': {
-        'pregunta': '¿Qué es la inflación?',
-        'opciones': [
-          'La caída de precios',
-          'El aumento generalizado de precios',
-          'El ahorro excesivo',
-          'La reducción de exportaciones'
-        ],
-        'respuesta': 'El aumento generalizado de precios',
-        'explicación': 'La inflación representa el aumento sostenido del nivel general de precios de bienes y servicios.'
+  final List<Map<String, dynamic>> trivias = [
+    {
+      'id': 'sistemas_trivia_01',
+      'data': {
+        'anio': 2024,
+        'docente': 'Ing. Carlos Rivera',
+        'duracion_aprox': 5,
+        'imagen_url': 'null',
+        'materia': 'Algoritmos',
+        'carrera': 'Ingeniería de Sistemas',
+        'nivel': 'intermedio',
+        'semestre': 'III',
+        'sigla': 'INF-203',
+        'preguntas': {
+          'p1': {
+            'pregunta': '¿Qué es un algoritmo?',
+            'opciones': [
+              'Una fórmula matemática',
+              'Un conjunto de instrucciones paso a paso',
+              'Un lenguaje de programación',
+              'Una base de datos'
+            ],
+            'respuesta': 'Un conjunto de instrucciones paso a paso',
+            'explicación': 'Un algoritmo es una secuencia ordenada de pasos que resuelve un problema.'
+          },
+          'p2': {
+            'pregunta': '¿Qué estructura de control permite repetir instrucciones?',
+            'opciones': ['Condicional', 'Función', 'Bucle', 'Clase'],
+            'respuesta': 'Bucle',
+            'explicación': 'Los bucles permiten repetir bloques de código hasta que se cumpla una condición.'
+          },
+        }
       }
+    },
+    {
+      'id': 'medicina_trivia_01',
+      'data': {
+        'anio': 2024,
+        'docente': 'Dr. Juan Pérez',
+        'duracion_aprox': 5,
+        'imagen_url': 'null',
+        'materia': 'Anatomía Humana',
+        'carrera': 'Medicina',
+        'nivel': 'básico',
+        'semestre': 'I',
+        'sigla': 'MED-101',
+        'preguntas': {
+          'p1': {
+            'pregunta': '¿Cuántos huesos tiene el cuerpo humano adulto?',
+            'opciones': ['206', '300', '180', '250'],
+            'respuesta': '206',
+            'explicación': 'El cuerpo humano adulto tiene 206 huesos.'
+          },
+          'p2': {
+            'pregunta': '¿Qué órgano bombea la sangre en el cuerpo?',
+            'opciones': ['Hígado', 'Pulmón', 'Corazón', 'Riñón'],
+            'respuesta': 'Corazón',
+            'explicación': 'El corazón es el órgano responsable de bombear la sangre.'
+          },
+        }
+      }
+    },
+    {
+      'id': 'derecho_trivia_01',
+      'data': {
+        'anio': 2024,
+        'docente': 'Lic. Ana Gómez',
+        'duracion_aprox': 5,
+        'imagen_url': 'null',
+        'materia': 'Derecho Constitucional',
+        'carrera': 'Derecho',
+        'nivel': 'intermedio',
+        'semestre': 'IV',
+        'sigla': 'DER-202',
+        'preguntas': {
+          'p1': {
+            'pregunta': '¿Qué establece una Constitución?',
+            'opciones': [
+              'Reglas de fútbol',
+              'Normas de etiqueta',
+              'La organización del Estado y los derechos fundamentales',
+              'Precios de mercado'
+            ],
+            'respuesta': 'La organización del Estado y los derechos fundamentales',
+            'explicación': 'La Constitución define la estructura del Estado y garantiza los derechos de los ciudadanos.'
+          },
+          'p2': {
+            'pregunta': '¿Cuál es el poder encargado de interpretar las leyes?',
+            'opciones': ['Ejecutivo', 'Legislativo', 'Judicial', 'Militar'],
+            'respuesta': 'Judicial',
+            'explicación': 'El poder judicial interpreta y aplica las leyes.'
+          },
+        }
+      }
+    },
+  ];
+
+  for (final trivia in trivias) {
+    try {
+      await FirebaseFirestore.instance
+          .collection('trivias')
+          .doc(trivia['id'])
+          .set(trivia['data']);
+      debugPrint('✅ Trivia subida exitosamente con ID: ${trivia['id']}');
+    } catch (e) {
+      debugPrint('❌ Error al subir trivia ${trivia['id']}: $e');
     }
-  };
-
-  try {
-    await FirebaseFirestore.instance
-        .collection('trivias')
-        .doc(triviaId)
-        .set(triviaData);
-
-    debugPrint('✅ Trivia subida exitosamente con ID: $triviaId');
-  } catch (e) {
-    debugPrint('❌ Error al subir trivia: $e');
   }
 }
 

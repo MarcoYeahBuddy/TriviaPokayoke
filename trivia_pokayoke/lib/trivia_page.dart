@@ -143,31 +143,43 @@ class _TriviaScreenState extends State<TriviaScreen> {
     return '$m:$s';
   }
 
-  Color _backgroundForMateria(String materia) {
-    switch (materia.toLowerCase()) {
-      case 'economía':
-        return const Color(0xFF8D6467);
-      case 'contabilidad':
-        return const Color(0xFF5D8B72);
-      case 'marketing':
-        return const Color(0xFF5A7F9C);
-      default:
-        return Colors.grey.shade400;
-    }
+Color _backgroundForMateria(String materia) {
+  switch (materia.toLowerCase()) {
+    case 'economía':
+      return const Color(0xFF8D6467);
+    case 'contabilidad':
+      return const Color(0xFF5D8B72);
+    case 'marketing':
+      return const Color(0xFF5A7F9C);
+    case 'ingenieria de sistemas':
+      return const Color(0xFF4A6C8C); // Ingeniería de Sistemas
+    case 'medicina':
+      return const Color(0xFFB56576); // Medicina
+    case 'derecho':
+      return const Color(0xFF937DC2); // Derecho
+    default:
+      return Colors.grey.shade400;
   }
+}
 
-  Color _panelForMateria(String materia) {
-    switch (materia.toLowerCase()) {
-      case 'economía':
-        return const Color(0xFF7A441C);
-      case 'contabilidad':
-        return const Color(0xFF3A6B50);
-      case 'marketing':
-        return const Color(0xFF2F5570);
-      default:
-        return Colors.grey.shade600;
-    }
+Color _panelForMateria(String materia) {
+  switch (materia.toLowerCase()) {
+    case 'economía':
+      return const Color(0xFF7A441C);
+    case 'contabilidad':
+      return const Color(0xFF3A6B50);
+    case 'marketing':
+      return const Color(0xFF2F5570);
+    case 'ingenieria de sistemas':
+      return const Color(0xFF2E4A62); // Ingeniería de Sistemas
+    case 'medicina':
+      return const Color(0xFF924055); // Medicina
+    case 'derecho':
+      return const Color(0xFF6A55A4); // Derecho
+    default:
+      return Colors.grey.shade600;
   }
+}
 
   @override
   void dispose() {

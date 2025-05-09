@@ -18,8 +18,18 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
-  String _selectedCategoria = 'TODOS';
-  final List<String> _categorias = ['TODOS', 'Economía', 'Contabilidad', 'Marketing'];
+String _selectedCategoria = 'Todas las carreras';
+final List<Map<String, String>> _categorias = [
+  {'sigla': 'TODOS', 'nombre': 'Todas las carreras'},
+  {'sigla': 'ECO', 'nombre': 'Economía'},
+  {'sigla': 'CON', 'nombre': 'Contabilidad'},
+  {'sigla': 'MKT', 'nombre': 'Marketing'},
+  {'sigla': 'SIS', 'nombre': 'Ingeniería de Sistemas'},
+  {'sigla': 'MED', 'nombre': 'Medicina'},
+  {'sigla': 'DER', 'nombre': 'Derecho'},
+];
+
+
 
   void _logout() {
     Navigator.pushReplacement(
@@ -56,7 +66,7 @@ class _HomePageState extends State<HomePage> {
                 icon: const Icon(Icons.logout, color: Colors.red),
                 onPressed: _logout,
               ),
-              ElevatedButton(
+              /*ElevatedButton(
                 onPressed: subirTriviaDemo,
                 child: const Text('Subir Economía'),
               ),
@@ -67,7 +77,7 @@ class _HomePageState extends State<HomePage> {
               ElevatedButton(
                 onPressed: subirTriviaContabilidad,
                 child: const Text('Subir Contabilidad'),
-              ),
+              ),*/
             ],
           ),
           const SizedBox(height: 16),
@@ -91,25 +101,26 @@ class _HomePageState extends State<HomePage> {
           Wrap(
             spacing: 8,
             children: _categorias.map((categoria) {
-              final isSelected = _selectedCategoria == categoria;
+              final isSelected = _selectedCategoria == categoria['nombre'];
               return ChoiceChip(
-                label: Text(categoria),
+                label: Text(categoria['sigla']!),
                 selected: isSelected,
                 onSelected: (_) {
                   setState(() {
-                    _selectedCategoria = categoria;
+                    _selectedCategoria = categoria['nombre']!;
                   });
                 },
               );
             }).toList(),
           ),
 
+
           const SizedBox(height: 16),
 
           // Cargar cursos desde Firestore
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
-              stream: _selectedCategoria == 'TODOS'
+              stream: _selectedCategoria == 'Todas las carreras'
                   ? FirebaseFirestore.instance.collection('trivias').snapshots()
                   : FirebaseFirestore.instance
                       .collection('trivias')
@@ -219,16 +230,22 @@ class _HomePageState extends State<HomePage> {
   }
 
   Color _colorForMateria(String carrera) {
-    switch (carrera.toLowerCase()) {
-      case 'economía': // Cambiado a minúsculas
-        return Colors.orangeAccent.shade100;
-      case 'contabilidad': // Cambiado a minúsculas
-        return Colors.greenAccent.shade100;
-      case 'marketing': // Cambiado a minúsculas
-        return Colors.lightBlueAccent.shade100;
-      default:
-        return Colors.grey.shade300;
-    }
+      switch (carrera.toLowerCase()) {
+        case 'economía':
+          return Colors.orangeAccent.shade100;
+        case 'contabilidad':
+          return Colors.greenAccent.shade100;
+        case 'marketing':
+          return Colors.lightBlueAccent.shade100;
+        case 'ingeniería de sistemas':
+          return Colors.blueGrey.shade100;
+        case 'medicina':
+          return Colors.redAccent.shade100;
+        case 'derecho':
+          return Colors.purpleAccent.shade100;
+        default:
+          return Colors.grey.shade300;
+      }
   }
 
   @override
