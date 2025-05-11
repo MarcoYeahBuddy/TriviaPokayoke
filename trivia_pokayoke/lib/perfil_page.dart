@@ -1,53 +1,129 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'login.dart';
 
-class PerfilPage extends StatelessWidget {
+class PerfilPage extends StatefulWidget {
   const PerfilPage({super.key});
 
-  void _logout(BuildContext context) {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const LoginPage()),
-    );
+  @override
+  State<PerfilPage> createState() => _PerfilPageState();
+}
+
+class _PerfilPageState extends State<PerfilPage> {
+  final user = FirebaseAuth.instance.currentUser;
+  Map<String, dynamic>? userData;
+  int completedTrivias = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+    _loadCompletedTrivias();
+  }
+
+  Future<void> _loadUserData() async {
+    if (user != null) {
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user!.uid)
+          .get();
+      
+      if (doc.exists) {
+        setState(() {
+          userData = doc.data();
+        });
+      }
+    }
+  }
+
+  Future<void> _loadCompletedTrivias() async {
+    if (user != null) {
+      final scores = await FirebaseFirestore.instance
+          .collection('scores')
+          .where('userId', isEqualTo: user!.uid)
+          .get();
+
+      setState(() {
+        completedTrivias = scores.docs.length;
+      });
+    }
+  }
+
+  Future<void> _logout() async {
+    await FirebaseAuth.instance.signOut();
+    if (mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginPage()),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    if (userData == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: isDark ? Colors.grey[900] : Colors.grey[100],
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
             children: [
-              const CircleAvatar(
+              CircleAvatar(
                 radius: 50,
-                child: Text("🧑", style: TextStyle(fontSize: 40)),
+                backgroundColor: isDark ? Colors.deepPurple[700] : Colors.deepPurple[100],
+                child: Text(
+                  (userData?['nombre']?[0] ?? '?').toUpperCase(),
+                  style: TextStyle(
+                    fontSize: 40,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.deepPurple,
+                  ),
+                ),
               ),
               const SizedBox(height: 16),
-              const Text(
-                'Sergio Villegas',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              Text(
+                '${userData?['nombre'] ?? ''} ${userData?['apellido'] ?? ''}',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : Colors.black87,
+                ),
               ),
               const SizedBox(height: 4),
-              const Text(
-                'sergio@universidad.edu',
-                style: TextStyle(color: Colors.grey),
+              Text(
+                userData?['email'] ?? '',
+                style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600]),
               ),
               const SizedBox(height: 32),
-              ListTile(
-                leading: const Icon(Icons.school),
-                title: const Text('Carrera'),
-                subtitle: const Text('Ingeniería de Sistemas'),
-              ),
-              ListTile(
-                leading: const Icon(Icons.bar_chart),
-                title: const Text('Progreso'),
-                subtitle: const Text('7 materias completadas'),
+              Card(
+                color: isDark ? Colors.grey[850] : Colors.white,
+                child: ListTile(
+                  leading: Icon(Icons.emoji_events,
+                      color: isDark ? Colors.amber[400] : Colors.amber),
+                  title: Text(
+                    'Trivias Completadas',
+                    style: TextStyle(
+                      color: isDark ? Colors.white : Colors.black87,
+                    ),
+                  ),
+                  subtitle: Text(
+                    '$completedTrivias trivias',
+                    style: TextStyle(
+                      color: isDark ? Colors.grey[400] : Colors.grey[600],
+                    ),
+                  ),
+                ),
               ),
               const Spacer(),
               ElevatedButton.icon(
-                onPressed: () => _logout(context),
+                onPressed: _logout,
                 icon: const Icon(Icons.logout),
                 label: const Text('Cerrar sesión'),
                 style: ElevatedButton.styleFrom(
