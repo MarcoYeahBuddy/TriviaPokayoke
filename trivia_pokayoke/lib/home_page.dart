@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:trivia_pokayoke/scores_page.dart';
 import 'login.dart';
 import 'perfil_page.dart';
 import 'ajustes_page.dart';
@@ -18,18 +19,16 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
-String _selectedCategoria = 'Todas las carreras';
-final List<Map<String, String>> _categorias = [
-  {'sigla': 'TODOS', 'nombre': 'Todas las carreras'},
-  {'sigla': 'ECO', 'nombre': 'Economía'},
-  {'sigla': 'CON', 'nombre': 'Contabilidad'},
-  {'sigla': 'MKT', 'nombre': 'Marketing'},
-  {'sigla': 'SIS', 'nombre': 'Ingeniería de Sistemas'},
-  {'sigla': 'MED', 'nombre': 'Medicina'},
-  {'sigla': 'DER', 'nombre': 'Derecho'},
-];
-
-
+  String _selectedCategoria = 'Todas las carreras';
+  final List<Map<String, String>> _categorias = [
+    {'sigla': 'TODOS', 'nombre': 'Todas las carreras'},
+    {'sigla': 'ECO', 'nombre': 'Economía'},
+    {'sigla': 'CON', 'nombre': 'Contabilidad'},
+    {'sigla': 'MKT', 'nombre': 'Marketing'},
+    {'sigla': 'SIS', 'nombre': 'Ingeniería de Sistemas'},
+    {'sigla': 'MED', 'nombre': 'Medicina'},
+    {'sigla': 'DER', 'nombre': 'Derecho'},
+  ];
 
   void _logout() {
     Navigator.pushReplacement(
@@ -42,6 +41,8 @@ final List<Map<String, String>> _categorias = [
     if (_selectedIndex == 0) {
       return _buildPruebasContent();
     } else if (_selectedIndex == 1) {
+      return const ScoresPage();
+    } else if (_selectedIndex == 2) {
       return const PerfilPage();
     } else {
       return const AjustesPage();
@@ -66,18 +67,6 @@ final List<Map<String, String>> _categorias = [
                 icon: const Icon(Icons.logout, color: Colors.red),
                 onPressed: _logout,
               ),
-              /*ElevatedButton(
-                onPressed: subirTriviaDemo,
-                child: const Text('Subir Economía'),
-              ),
-              ElevatedButton(
-                onPressed: subirTriviaMarketing,
-                child: const Text('Subir Marketing'),
-              ),
-              ElevatedButton(
-                onPressed: subirTriviaContabilidad,
-                child: const Text('Subir Contabilidad'),
-              ),*/
             ],
           ),
           const SizedBox(height: 16),
@@ -113,7 +102,6 @@ final List<Map<String, String>> _categorias = [
               );
             }).toList(),
           ),
-
 
           const SizedBox(height: 16),
 
@@ -230,22 +218,22 @@ final List<Map<String, String>> _categorias = [
   }
 
   Color _colorForMateria(String carrera) {
-      switch (carrera.toLowerCase()) {
-        case 'economía':
-          return Colors.orangeAccent.shade100;
-        case 'contabilidad':
-          return Colors.greenAccent.shade100;
-        case 'marketing':
-          return Colors.lightBlueAccent.shade100;
-        case 'ingeniería de sistemas':
-          return Colors.blueGrey.shade100;
-        case 'medicina':
-          return Colors.redAccent.shade100;
-        case 'derecho':
-          return Colors.purpleAccent.shade100;
-        default:
-          return Colors.grey.shade300;
-      }
+    switch (carrera.toLowerCase()) {
+      case 'economía':
+        return Colors.orangeAccent.shade100;
+      case 'contabilidad':
+        return Colors.greenAccent.shade100;
+      case 'marketing':
+        return Colors.lightBlueAccent.shade100;
+      case 'ingeniería de sistemas':
+        return Colors.blueGrey.shade100;
+      case 'medicina':
+        return Colors.redAccent.shade100;
+      case 'derecho':
+        return Colors.purpleAccent.shade100;
+      default:
+        return Colors.grey.shade300;
+    }
   }
 
   @override
@@ -258,9 +246,11 @@ final List<Map<String, String>> _categorias = [
         onTap: (value) => setState(() => _selectedIndex = value),
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.quiz), label: 'Pruebas'),
+          BottomNavigationBarItem(icon: Icon(Icons.leaderboard), label: 'Puntajes'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Perfil'),
           BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Ajustes'),
         ],
+        type: BottomNavigationBarType.fixed,
       ),
     );
   }
