@@ -31,6 +31,70 @@ class _HomePageState extends State<HomePage> {
     {'sigla': 'DER', 'nombre': 'Derecho'},
   ];
 
+  final TextEditingController _searchController = TextEditingController();
+  List<QueryDocumentSnapshot>? _allTriviasCache;
+  List<QueryDocumentSnapshot>? _filteredTrivias;
+  bool _isLoadingTrivias = false;
+  String _lastCategoria = 'Todas las carreras';
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(_onSearchChanged);
+    _fetchTrivias();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged() {
+    _filterTrivias();
+  }
+
+  Future<void> _fetchTrivias() async {
+    setState(() {
+      _isLoadingTrivias = true;
+    });
+    Query query = FirebaseFirestore.instance.collection('trivias');
+    if (_selectedCategoria != 'Todas las carreras') {
+      query = query.where('carrera', isEqualTo: _selectedCategoria);
+    }
+    final snapshot = await query.get();
+    _allTriviasCache = snapshot.docs;
+    _lastCategoria = _selectedCategoria;
+    _filterTrivias();
+    setState(() {
+      _isLoadingTrivias = false;
+    });
+  }
+
+  void _filterTrivias() {
+    final search = _searchController.text.trim().toLowerCase();
+    if (_allTriviasCache == null) return;
+    setState(() {
+      if (search.isEmpty) {
+        _filteredTrivias = List.from(_allTriviasCache!);
+      } else {
+        _filteredTrivias = _allTriviasCache!.where((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          final materia = (data['materia'] ?? '').toString().toLowerCase();
+          return materia.contains(search);
+        }).toList();
+      }
+    });
+  }
+
+  void _onCategoriaChanged(String categoria) async {
+    setState(() {
+      _selectedCategoria = categoria;
+      _isLoadingTrivias = true;
+    });
+    await _fetchTrivias();
+  }
+
   void _logout() async {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final mainBlue = const Color(0xFF1B2F5C);
@@ -171,6 +235,7 @@ class _HomePageState extends State<HomePage> {
             ),
             const SizedBox(height: 16),
             TextField(
+              controller: _searchController,
               decoration: InputDecoration(
                 hintText: 'Buscar cursos',
                 hintStyle: TextStyle(
@@ -230,7 +295,9 @@ class _HomePageState extends State<HomePage> {
                     visualDensity: const VisualDensity(horizontal: -2, vertical: -4),
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
                     onSelected: (_) {
-                      setState(() => _selectedCategoria = categoria['nombre']!);
+                      if (_selectedCategoria != categoria['nombre']) {
+                        _onCategoriaChanged(categoria['nombre']!);
+                      }
                     },
                   ),
                 );
@@ -238,281 +305,267 @@ class _HomePageState extends State<HomePage> {
             ),
             const SizedBox(height: 16),
             Expanded(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final crossAxisCount = constraints.maxWidth > 700
-                      ? 3
-                      : constraints.maxWidth > 500
-                          ? 2
-                          : 1;
-                  return StreamBuilder<QuerySnapshot>(
-                    stream: _selectedCategoria == 'Todas las carreras'
-                        ? FirebaseFirestore.instance.collection('trivias').snapshots()
-                        : FirebaseFirestore.instance
-                            .collection('trivias')
-                            .where('carrera', isEqualTo: _selectedCategoria)
-                            .snapshots(),
-                    builder: (context, snapshot) {
-                      if (snapshot.hasError) {
-                        return const Center(child: Text('Error al cargar cursos'));
-                      }
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-                      final docs = snapshot.data!.docs;
-                      if (docs.isEmpty) {
-                        return const Center(child: Text('No hay cursos disponibles aún.'));
-                      }
-                      return GridView.builder(
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: crossAxisCount,
-                          crossAxisSpacing: 18,
-                          mainAxisSpacing: 18,
-                          childAspectRatio: 1.15,
-                        ),
-                        itemCount: docs.length,
-                        itemBuilder: (context, index) {
-                          final doc = docs[index];
-                          final data = doc.data() as Map<String, dynamic>;
-                          final docId = doc.id;
-                          final materia = data['materia'] ?? 'Materia';
-                          final carrera = data['carrera'] ?? 'Carrera';
-                          final duracion = '${data['duracion_aprox'] ?? 0} min';
-                          final docente = data['docente'] ?? 'Sin docente';
-                          final sigla = data['sigla'] ?? '';
-                          final color = isDark
-                              ? _colorForMateriaDark(carrera)
-                              : _colorForMateria(carrera);
+              child: _isLoadingTrivias
+                  ? const Center(child: CircularProgressIndicator())
+                  : _filteredTrivias == null
+                      ? const Center(child: Text('No hay cursos disponibles aún.'))
+                      : _filteredTrivias!.isEmpty
+                          ? const Center(child: Text('No se encontraron resultados.'))
+                          : LayoutBuilder(
+                              builder: (context, constraints) {
+                                final crossAxisCount = constraints.maxWidth > 700
+                                    ? 3
+                                    : constraints.maxWidth > 500
+                                        ? 2
+                                        : 1;
+                                return GridView.builder(
+                                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: crossAxisCount,
+                                    crossAxisSpacing: 18,
+                                    mainAxisSpacing: 18,
+                                    childAspectRatio: 1.15,
+                                  ),
+                                  itemCount: _filteredTrivias!.length,
+                                  itemBuilder: (context, index) {
+                                    final doc = _filteredTrivias![index];
+                                    final data = doc.data() as Map<String, dynamic>;
+                                    final docId = doc.id;
+                                    final materia = data['materia'] ?? 'Materia';
+                                    final carrera = data['carrera'] ?? 'Carrera';
+                                    final duracion = '${data['duracion_aprox'] ?? 0} min';
+                                    final docente = data['docente'] ?? 'Sin docente';
+                                    final sigla = data['sigla'] ?? '';
+                                    final color = isDark
+                                        ? _colorForMateriaDark(carrera)
+                                        : _colorForMateria(carrera);
 
-                          return GestureDetector(
-                            onTap: () {
-                              showDialog(
-                                context: context,
-                                barrierDismissible: false,
-                                builder: (_) {
-                                  return Dialog(
-                                    backgroundColor: isDark
-                                        ? mainBlue.withOpacity(0.98)
-                                        : mainBlue.withOpacity(0.92),
-                                    shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(24)),
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                          vertical: 32, horizontal: 24),
-                                      child: ConstrainedBox(
-                                        constraints: const BoxConstraints(
-                                            maxWidth: 350, minWidth: 220),
+                                    return GestureDetector(
+                                      onTap: () {
+                                        showDialog(
+                                          context: context,
+                                          barrierDismissible: false,
+                                          builder: (_) {
+                                            return Dialog(
+                                              backgroundColor: isDark
+                                                  ? mainBlue.withOpacity(0.98)
+                                                  : mainBlue.withOpacity(0.92),
+                                              shape: RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius.circular(24)),
+                                              child: Padding(
+                                                padding: const EdgeInsets.symmetric(
+                                                    vertical: 32, horizontal: 24),
+                                                child: ConstrainedBox(
+                                                  constraints: const BoxConstraints(
+                                                      maxWidth: 350, minWidth: 220),
+                                                  child: Column(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: [
+                                                      Container(
+                                                        decoration: BoxDecoration(
+                                                          color: color,
+                                                          shape: BoxShape.circle,
+                                                          boxShadow: [
+                                                            BoxShadow(
+                                                              color: Colors.black.withOpacity(0.08),
+                                                              blurRadius: 12,
+                                                              offset: const Offset(0, 4),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                        padding: const EdgeInsets.all(18),
+                                                        child: Icon(
+                                                          Icons.quiz,
+                                                          color: Colors.white,
+                                                          size: 48,
+                                                        ),
+                                                      ),
+                                                      const SizedBox(height: 18),
+                                                      Text(
+                                                        materia,
+                                                        style: const TextStyle(
+                                                          fontSize: 22,
+                                                          fontWeight: FontWeight.bold,
+                                                          color: Colors.white,
+                                                          letterSpacing: 1.1,
+                                                          shadows: [
+                                                            Shadow(
+                                                              color: Colors.black26,
+                                                              blurRadius: 2,
+                                                              offset: Offset(1, 1),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                        textAlign: TextAlign.center,
+                                                      ),
+                                                      const SizedBox(height: 10),
+                                                      Container(
+                                                        width: double.infinity,
+                                                        margin: const EdgeInsets.symmetric(vertical: 6),
+                                                        padding: const EdgeInsets.all(12),
+                                                        decoration: BoxDecoration(
+                                                          color: color.withOpacity(0.15),
+                                                          borderRadius: BorderRadius.circular(12),
+                                                        ),
+                                                        child: Column(
+                                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                                          children: [
+                                                            Text(
+                                                              'Docente: $docente',
+                                                              style: const TextStyle(
+                                                                color: Colors.white70,
+                                                                fontSize: 15,
+                                                              ),
+                                                            ),
+                                                            const SizedBox(height: 4),
+                                                            Text(
+                                                              'Sigla: $sigla',
+                                                              style: const TextStyle(
+                                                                color: Colors.white70,
+                                                                fontSize: 15,
+                                                              ),
+                                                            ),
+                                                            const SizedBox(height: 4),
+                                                            Text(
+                                                              'Duración: $duracion',
+                                                              style: const TextStyle(
+                                                                color: Colors.white70,
+                                                                fontSize: 15,
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                      const SizedBox(height: 10),
+                                                      Text(
+                                                        '¿Listo para comenzar la trivia?',
+                                                        style: TextStyle(
+                                                          color: Colors.orangeAccent.shade200,
+                                                          fontWeight: FontWeight.bold,
+                                                          fontSize: 16,
+                                                        ),
+                                                        textAlign: TextAlign.center,
+                                                      ),
+                                                      const SizedBox(height: 24),
+                                                      Row(
+                                                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                                        children: [
+                                                          TextButton(
+                                                            onPressed: () => Navigator.pop(context),
+                                                            child: const Text(
+                                                              'Cancelar',
+                                                              style: TextStyle(
+                                                                fontSize: 16,
+                                                                color: Colors.white70,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                          ElevatedButton(
+                                                            style: ElevatedButton.styleFrom(
+                                                              backgroundColor: color,
+                                                              foregroundColor: Colors.white,
+                                                              shape: RoundedRectangleBorder(
+                                                                borderRadius: BorderRadius.circular(12),
+                                                              ),
+                                                              padding: const EdgeInsets.symmetric(
+                                                                  horizontal: 18, vertical: 10),
+                                                            ),
+                                                            onPressed: () {
+                                                              Navigator.pop(context);
+                                                              Navigator.push(
+                                                                context,
+                                                                MaterialPageRoute(
+                                                                  builder: (_) => TriviaScreen(triviaId: docId),
+                                                                ),
+                                                              );
+                                                            },
+                                                            child: const Text('¡Empezar!',
+                                                                style: TextStyle(fontSize: 16)),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        );
+                                      },
+                                      child: Card(
+                                        margin: EdgeInsets.zero,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(16),
+                                        ),
+                                        color: isDark
+                                            ? mainBlue.withOpacity(0.7)
+                                            : Colors.white,
+                                        elevation: 4,
                                         child: Column(
-                                          mainAxisSize: MainAxisSize.min,
                                           children: [
                                             Container(
+                                              height: 80,
                                               decoration: BoxDecoration(
                                                 color: color,
-                                                shape: BoxShape.circle,
-                                                boxShadow: [
-                                                  BoxShadow(
-                                                    color: Colors.black.withOpacity(0.08),
-                                                    blurRadius: 12,
-                                                    offset: const Offset(0, 4),
-                                                  ),
-                                                ],
+                                                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
                                               ),
-                                              padding: const EdgeInsets.all(18),
-                                              child: Icon(
-                                                Icons.quiz,
-                                                color: Colors.white,
-                                                size: 48,
+                                              child: const Center(
+                                                child: Icon(Icons.school, size: 40, color: Colors.white70),
                                               ),
                                             ),
-                                            const SizedBox(height: 18),
-                                            Text(
-                                              materia,
-                                              style: const TextStyle(
-                                                fontSize: 22,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.white,
-                                                letterSpacing: 1.1,
-                                                shadows: [
-                                                  Shadow(
-                                                    color: Colors.black26,
-                                                    blurRadius: 2,
-                                                    offset: Offset(1, 1),
-                                                  ),
-                                                ],
-                                              ),
-                                              textAlign: TextAlign.center,
-                                            ),
-                                            const SizedBox(height: 10),
-                                            Container(
-                                              width: double.infinity,
-                                              margin: const EdgeInsets.symmetric(vertical: 6),
+                                            Padding(
                                               padding: const EdgeInsets.all(12),
-                                              decoration: BoxDecoration(
-                                                color: color.withOpacity(0.15),
-                                                borderRadius: BorderRadius.circular(12),
-                                              ),
                                               child: Column(
                                                 crossAxisAlignment: CrossAxisAlignment.start,
                                                 children: [
                                                   Text(
+                                                    materia,
+                                                    style: TextStyle(
+                                                      fontSize: 16,
+                                                      fontWeight: FontWeight.bold,
+                                                      color: isDark ? Colors.white : mainBlue,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 4),
+                                                  Text(
                                                     'Docente: $docente',
-                                                    style: const TextStyle(
-                                                      color: Colors.white70,
-                                                      fontSize: 15,
+                                                    style: TextStyle(
+                                                      fontSize: 13,
+                                                      color: isDark ? Colors.white70 : Colors.black87,
                                                     ),
                                                   ),
                                                   const SizedBox(height: 4),
-                                                  Text(
-                                                    'Sigla: $sigla',
-                                                    style: const TextStyle(
-                                                      color: Colors.white70,
-                                                      fontSize: 15,
-                                                    ),
-                                                  ),
-                                                  const SizedBox(height: 4),
-                                                  Text(
-                                                    'Duración: $duracion',
-                                                    style: const TextStyle(
-                                                      color: Colors.white70,
-                                                      fontSize: 15,
-                                                    ),
+                                                  Row(
+                                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                    children: [
+                                                      Text(
+                                                        duracion,
+                                                        style: TextStyle(
+                                                          color: isDark ? Colors.grey[400] : mainBlue.withOpacity(0.7),
+                                                          fontWeight: FontWeight.w600,
+                                                          fontSize: 13,
+                                                        ),
+                                                      ),
+                                                      Text(
+                                                        sigla,
+                                                        style: TextStyle(
+                                                          fontWeight: FontWeight.bold,
+                                                          color: isDark ? Colors.white54 : mainBlue,
+                                                          fontSize: 13,
+                                                        ),
+                                                      ),
+                                                    ],
                                                   ),
                                                 ],
                                               ),
-                                            ),
-                                            const SizedBox(height: 10),
-                                            Text(
-                                              '¿Listo para comenzar la trivia?',
-                                              style: TextStyle(
-                                                color: Colors.orangeAccent.shade200,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 16,
-                                              ),
-                                              textAlign: TextAlign.center,
-                                            ),
-                                            const SizedBox(height: 24),
-                                            Row(
-                                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                              children: [
-                                                TextButton(
-                                                  onPressed: () => Navigator.pop(context),
-                                                  child: const Text(
-                                                    'Cancelar',
-                                                    style: TextStyle(
-                                                      fontSize: 16,
-                                                      color: Colors.white70,
-                                                    ),
-                                                  ),
-                                                ),
-                                                ElevatedButton(
-                                                  style: ElevatedButton.styleFrom(
-                                                    backgroundColor: color,
-                                                    foregroundColor: Colors.white,
-                                                    shape: RoundedRectangleBorder(
-                                                      borderRadius: BorderRadius.circular(12),
-                                                    ),
-                                                    padding: const EdgeInsets.symmetric(
-                                                        horizontal: 18, vertical: 10),
-                                                  ),
-                                                  onPressed: () {
-                                                    Navigator.pop(context);
-                                                    Navigator.push(
-                                                      context,
-                                                      MaterialPageRoute(
-                                                        builder: (_) => TriviaScreen(triviaId: docId),
-                                                      ),
-                                                    );
-                                                  },
-                                                  child: const Text('¡Empezar!',
-                                                      style: TextStyle(fontSize: 16)),
-                                                ),
-                                              ],
-                                            ),
+                                            )
                                           ],
                                         ),
                                       ),
-                                    ),
-                                  );
-                                },
-                              );
-                            },
-                            child: Card(
-                              margin: EdgeInsets.zero,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              color: isDark
-                                  ? mainBlue.withOpacity(0.7)
-                                  : Colors.white,
-                              elevation: 4,
-                              child: Column(
-                                children: [
-                                  Container(
-                                    height: 80,
-                                    decoration: BoxDecoration(
-                                      color: color,
-                                      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                                    ),
-                                    child: const Center(
-                                      child: Icon(Icons.school, size: 40, color: Colors.white70),
-                                    ),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.all(12),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          materia,
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                            color: isDark ? Colors.white : mainBlue,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          'Docente: $docente',
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            color: isDark ? Colors.white70 : Colors.black87,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Text(
-                                              duracion,
-                                              style: TextStyle(
-                                                color: isDark ? Colors.grey[400] : mainBlue.withOpacity(0.7),
-                                                fontWeight: FontWeight.w600,
-                                                fontSize: 13,
-                                              ),
-                                            ),
-                                            Text(
-                                              sigla,
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                color: isDark ? Colors.white54 : mainBlue,
-                                                fontSize: 13,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  )
-                                ],
-                              ),
+                                    );
+                                  },
+                                );
+                              },
                             ),
-                          );
-                        },
-                      );
-                    },
-                  );
-                },
-              ),
             ),
           ],
         ),
