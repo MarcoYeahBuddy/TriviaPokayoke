@@ -53,10 +53,16 @@ class _TriviaScreenState extends State<TriviaScreen> {
       }
 
       final data = doc.data()!;
+      debugPrint('Raw trivia data: $data'); // Debug log
+
       final rawQuestions = data['preguntas'] as Map<String, dynamic>;
-      final questions = rawQuestions.values
-          .map((q) => TriviaQuestion.fromMap(q as Map<String, dynamic>))
-          .toList();
+      debugPrint('Raw questions: $rawQuestions'); // Debug log
+
+      final questions = rawQuestions.entries.map((entry) {
+        final questionData = Map<String, dynamic>.from(entry.value);
+        debugPrint('Processing question: $questionData'); // Debug log
+        return TriviaQuestion.fromMap(questionData);
+      }).toList();
 
       if (questions.isEmpty) {
         _showError('No hay preguntas en esta trivia.');
@@ -67,14 +73,14 @@ class _TriviaScreenState extends State<TriviaScreen> {
         materia = data['materia'] ?? 'General';
         docente = data['docente'] ?? 'Sin docente';
         carrera = data['carrera'] ?? 'General';
-        remainingSeconds = questions.length * 15; // 15 segundos por pregunta
+        remainingSeconds = questions.length * 30; // 30 segundos por pregunta
 
         controller = TriviaController(questions);
         isLoading = false;
-
-        _startTimer();
       });
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('Error loading trivia: $e');
+      debugPrint('Stack trace: $stackTrace');
       _showError('Error al cargar la trivia: $e');
     }
   }
@@ -499,7 +505,7 @@ class _TriviaScreenState extends State<TriviaScreen> {
                   child: QuestionCard(
                     question: question,
                     onOptionSelected: handleAnswer,
-                    carrera: carrera,
+                    carrera: materia, // Cambiado de carrera a materia
                   ),
                 ),
               ),
@@ -532,7 +538,7 @@ class _TriviaScreenState extends State<TriviaScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Imagen decorativa para panel de explicación
+                // Imagen decorativa
                 Container(
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.85),
@@ -547,7 +553,7 @@ class _TriviaScreenState extends State<TriviaScreen> {
                   ),
                   padding: const EdgeInsets.all(12),
                   child: Image.asset(
-                    'images/cerebro_jugando.png',
+                    isCorrect ? 'images/cerebro_bien.png' : 'images/cerebro_sad.png',
                     height: 50,
                     fit: BoxFit.contain,
                   ),
@@ -555,16 +561,37 @@ class _TriviaScreenState extends State<TriviaScreen> {
                 const SizedBox(height: 16),
                 Text(
                   isCorrect ? '✅ ¡Correcto!' : '❌ Incorrecto',
-                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white
+                  ),
                 ),
                 const SizedBox(height: 20),
-                if (question.explanation != null) ...[
+                if (question.latex != null) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Math.tex(
+                      question.latex!,
+                      textStyle: const TextStyle(
+                        fontSize: 20,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                if (question.explanation != null)
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(14),
-                    margin: const EdgeInsets.only(bottom: 8),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.10),
+                      color: Colors.white.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -572,44 +599,60 @@ class _TriviaScreenState extends State<TriviaScreen> {
                       style: const TextStyle(color: Colors.white, fontSize: 16),
                     ),
                   ),
-                  const SizedBox(height: 8),
-                ],
-                if (question.solutionSteps != null) ...[
+                if (question.pasos?.isNotEmpty ?? false) ...[
+                  const SizedBox(height: 20),
                   const Text(
-                    'Explicación paso a paso:',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white),
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(12),
+                    'Paso a paso:',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold
                     ),
-                    child: SizedBox(
-                      height: MediaQuery.of(context).size.height * 0.4,
-                      child: SingleChildScrollView(
-                        child: Column(
-                          children: question.solutionSteps!.map((step) => Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                step['explanation']!,
-                                style: const TextStyle(fontSize: 16, color: Colors.white),
-                              ),
-                              if (step['latex'] != null) ...[
-                                const SizedBox(height: 8),
-                                Math.tex(
-                                  step['latex']!,
-                                  textStyle: const TextStyle(fontSize: 18, color: Colors.white),
-                                ),
-                                const SizedBox(height: 16),
-                              ],
-                            ],
-                          )).toList(),
+                  ),
+                  const SizedBox(height: 12),
+                  ...question.pasos!.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final step = entry.value;
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.1),
                         ),
                       ),
-                    ),
-                  ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Paso ${index + 1}:',
+                            style: const TextStyle(
+                              color: Colors.orangeAccent,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            step['texto'] ?? '',
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                          if (step['latex'] != null) ...[
+                            const SizedBox(height: 8),
+                            Math.tex(
+                              step['latex']!,
+                              textStyle: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    );
+                  }).toList(),
                 ],
                 const SizedBox(height: 20),
                 ElevatedButton(
@@ -620,19 +663,25 @@ class _TriviaScreenState extends State<TriviaScreen> {
                       _finishTrivia();
                     } else {
                       setState(() => controller!.nextQuestion());
-                      // Reinicia ambos timers al pasar a la siguiente pregunta
-                      startTimer(); // Timer de pregunta
-                      _startTimer(); // Timer global
+                      startTimer();
                     }
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _backgroundForMateria(carrera),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   child: Text(
                     isLastQuestion ? 'Finalizar' : 'Siguiente Pregunta',
-                    style: const TextStyle(fontSize: 16),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ],
