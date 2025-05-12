@@ -25,6 +25,7 @@ class CarreraColors {
   }
 
   static Color panel(String carrera, bool isDark) {
+    // Panel es más oscuro en ambos modos, pero en dark aún más
     switch (carrera.toLowerCase()) {
       case 'economía':
       case 'economia':
@@ -58,135 +59,112 @@ class QuestionCard extends StatelessWidget {
     required this.carrera,
   }) : super(key: key);
 
-  bool _isLatex(String text) {
-    return text.trim().startsWith(r'\') ||
-        (text.trim().startsWith(r'$') && text.trim().endsWith(r'$'));
+  bool get _isMatematicas {
+    try {
+      return carrera.toLowerCase().contains('cálculo') || 
+             carrera.toLowerCase().contains('calculo') ||
+             (question.latex?.isNotEmpty ?? false);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Widget _buildOptionWidget(String option, bool isDark) {
+    try {
+      if (_isMatematicas && option.contains(RegExp(r'[\\${}^_]'))) {
+        return Math.tex(
+          option,
+          textStyle: TextStyle(
+            fontSize: 16,
+            color: isDark ? Colors.white : Colors.black87,
+          ),
+          onErrorFallback: (error) => Text(
+            option,
+            style: TextStyle(
+              fontSize: 16,
+              color: isDark ? Colors.white : Colors.black87,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      print('Error rendering math: $e');
+    }
+
+    return Text(
+      option,
+      style: TextStyle(
+        fontSize: 16,
+        color: isDark ? Colors.white : Colors.black87,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final carreraKey = carrera.toLowerCase();
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final backgroundColor = CarreraColors.background(carreraKey, isDark);
-    final panelColor = CarreraColors.panel(carreraKey, isDark);
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 400),
-          curve: Curves.easeInOut,
-          margin: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: panelColor,
-            borderRadius: BorderRadius.circular(18),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.18),
-                blurRadius: 16,
-                offset: const Offset(0, 8),
-              ),
-            ],
-            border: Border.all(color: backgroundColor, width: 3),
-          ),
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Pregunta
-                AnimatedOpacity(
-                  opacity: 1.0,
-                  duration: const Duration(milliseconds: 500),
-                  child: Text(
-                    question.question,
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                      shadows: [
-                        Shadow(
-                          color: Colors.black.withOpacity(0.25),
-                          blurRadius: 2,
-                          offset: const Offset(1, 1),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 18),
-                // Fórmula LaTeX si existe
-                if (question.latex != null && question.latex!.isNotEmpty) ...[
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 400),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: backgroundColor.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Math.tex(
-                      question.latex!,
-                      textStyle: const TextStyle(
-                        fontSize: 22,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                ],
-                // Opciones
-                ...question.options.asMap().entries.map((entry) {
-                  final index = entry.key;
-                  final option = entry.value;
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: backgroundColor,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 18),
-                          elevation: 6,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            side: BorderSide(
-                              color: Colors.white.withOpacity(0.7),
-                              width: 1.5,
-                            ),
-                          ),
-                          shadowColor: Colors.black.withOpacity(0.18),
-                        ),
-                        onPressed: () => onOptionSelected(index),
-                        child: _isLatex(option)
-                            ? Math.tex(
-                                option,
-                                textStyle: const TextStyle(
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : Text(
-                                option,
-                                style: const TextStyle(
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.white,
-                                ),
-                                softWrap: true,
-                                overflow: TextOverflow.visible,
-                                textAlign: TextAlign.center,
-                              ),
-                      ),
-                    ),
-                  );
-                }),
-              ],
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Pregunta
+          Text(
+            question.question,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : Colors.black87,
             ),
           ),
-        );
-      },
+          const SizedBox(height: 16),
+
+          // Fórmula LaTeX si existe o si es trivia de cálculo
+          if (_isMatematicas && question.latex != null) ...[
+            Container(
+              padding: const EdgeInsets.all(16),
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: isDark ? Colors.black26 : Colors.white.withOpacity(0.9),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isDark ? Colors.white24 : Colors.grey.shade300,
+                ),
+              ),
+              child: Center(
+                child: Math.tex(
+                  question.latex!,
+                  textStyle: TextStyle(
+                    fontSize: 20,
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
+                ),
+              ),
+            ),
+          ],
+
+          // Opciones
+          ...question.options.asMap().entries.map((entry) {
+            final index = entry.key;
+            final option = entry.value;
+
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: isDark ? Colors.grey[800] : Colors.white,
+                  padding: const EdgeInsets.all(16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () => onOptionSelected(index),
+                child: _buildOptionWidget(option, isDark),
+              ),
+            );
+          }),
+        ],
+      ),
     );
   }
 }

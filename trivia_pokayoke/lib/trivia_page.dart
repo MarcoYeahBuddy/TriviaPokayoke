@@ -531,191 +531,162 @@ class _TriviaScreenState extends State<TriviaScreen> {
       builder: (_) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         backgroundColor: _panelForMateria(carrera),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            // Limita el ancho máximo del diálogo para evitar overflow
-            final double maxWidth = constraints.maxWidth < 420 ? constraints.maxWidth : 420;
-            return Container(
-              width: maxWidth,
-              constraints: BoxConstraints(
-                maxWidth: maxWidth,
-                minWidth: 220,
-                maxHeight: MediaQuery.of(context).size.height * 0.90,
-              ),
-              padding: const EdgeInsets.all(20),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Imagen decorativa
-                    Container(
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.9,
+          padding: const EdgeInsets.all(20),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Imagen decorativa
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.85),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.08),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  padding: const EdgeInsets.all(12),
+                  child: Image.asset(
+                    isCorrect ? 'images/cerebro_bien.png' : 'images/cerebro_sad.png',
+                    height: 50,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  isCorrect ? '✅ ¡Correcto!' : '❌ Incorrecto',
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white
+                  ),
+                ),
+                const SizedBox(height: 20),
+                if (question.latex != null) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Math.tex(
+                      question.latex!,
+                      textStyle: const TextStyle(
+                        fontSize: 20,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                if (question.explanation != null)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      question.explanation!,
+                      style: const TextStyle(color: Colors.white, fontSize: 16),
+                    ),
+                  ),
+                if (question.pasos?.isNotEmpty ?? false) ...[
+                  const SizedBox(height: 20),
+                  const Text(
+                    'Paso a paso:',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  ...question.pasos!.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final step = entry.value;
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.85),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.08),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
+                        color: Colors.white.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.1),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Paso ${index + 1}:',
+                            style: const TextStyle(
+                              color: Colors.orangeAccent,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
                           ),
+                          const SizedBox(height: 8),
+                          Text(
+                            step['texto'] ?? '',
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                          if (step['latex'] != null) ...[
+                            const SizedBox(height: 8),
+                            Math.tex(
+                              step['latex']!,
+                              textStyle: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                              ),
+                            ),
+                          ],
                         ],
                       ),
-                      padding: const EdgeInsets.all(12),
-                      child: Image.asset(
-                        isCorrect ? 'images/cerebro_bien.png' : 'images/cerebro_sad.png',
-                        height: 50,
-                        fit: BoxFit.contain,
-                      ),
+                    );
+                  }).toList(),
+                ],
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    if (isLastQuestion) {
+                      saveScore();
+                      _finishTrivia();
+                    } else {
+                      setState(() => controller!.nextQuestion());
+                      startTimer();
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _backgroundForMateria(carrera),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
                     ),
-                    const SizedBox(height: 16),
-                    Text(
-                      isCorrect ? '✅ ¡Correcto!' : '❌ Incorrecto',
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white
-                      ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    const SizedBox(height: 20),
-                    if (question.latex != null) ...[
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: ConstrainedBox(
-                            constraints: BoxConstraints(
-                              minWidth: 0,
-                              maxWidth: maxWidth - 40,
-                            ),
-                            child: Math.tex(
-                              question.latex!,
-                              textStyle: const TextStyle(
-                                fontSize: 20,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-                    if (question.explanation != null)
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          question.explanation!,
-                          style: const TextStyle(color: Colors.white, fontSize: 16),
-                        ),
-                      ),
-                    if (question.pasos?.isNotEmpty ?? false) ...[
-                      const SizedBox(height: 20),
-                      const Text(
-                        'Paso a paso:',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      ...question.pasos!.asMap().entries.map((entry) {
-                        final index = entry.key;
-                        final step = entry.value;
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Colors.white.withOpacity(0.1),
-                            ),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Paso ${index + 1}:',
-                                style: const TextStyle(
-                                  color: Colors.orangeAccent,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                step['texto'] ?? '',
-                                style: const TextStyle(color: Colors.white),
-                              ),
-                              if (step['latex'] != null) ...[
-                                const SizedBox(height: 8),
-                                SingleChildScrollView(
-                                  scrollDirection: Axis.horizontal,
-                                  child: ConstrainedBox(
-                                    constraints: BoxConstraints(
-                                      minWidth: 0,
-                                      maxWidth: maxWidth - 40,
-                                    ),
-                                    child: Math.tex(
-                                      step['latex']!,
-                                      textStyle: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 18,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        );
-                      }).toList(),
-                    ],
-                    const SizedBox(height: 20),
-                    ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        if (isLastQuestion) {
-                          saveScore();
-                          _finishTrivia();
-                        } else {
-                          setState(() => controller!.nextQuestion());
-                          startTimer();
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _backgroundForMateria(carrera),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 12,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: Text(
-                        isLastQuestion ? 'Finalizar' : 'Siguiente Pregunta',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          color: Colors.white,
-                        ),
-                      ),
+                  ),
+                  child: Text(
+                    isLastQuestion ? 'Finalizar' : 'Siguiente Pregunta',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      color: Colors.white,
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            );
-          },
+              ],
+            ),
+          ),
         ),
       ),
     );
