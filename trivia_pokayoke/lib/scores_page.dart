@@ -31,41 +31,69 @@ class _ScoresPageState extends State<ScoresPage> with SingleTickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final mainBlue = const Color(0xFF1B2F5C);
+    final lightBlue = const Color(0xFF3A4D7A);
+
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: isDark ? mainBlue.withOpacity(0.95) : mainBlue.withOpacity(0.07),
       appBar: AppBar(
-        title: const Text('Tabla de Puntuaciones'),
+        backgroundColor: isDark ? mainBlue.withOpacity(0.95) : mainBlue.withOpacity(0.85),
+        elevation: 4,
+        title: const Text(
+          'Tabla de Puntuaciones',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+            letterSpacing: 1.2,
+          ),
+        ),
+        centerTitle: true,
         bottom: TabBar(
           controller: _tabController,
+          indicatorColor: Colors.orangeAccent,
+          indicatorWeight: 3,
+          labelColor: Colors.orangeAccent,
+          unselectedLabelColor: Colors.white,
+          labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 15),
           tabs: const [
             Tab(text: 'Global'),
             Tab(text: 'Mis Puntajes'),
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildScoreList(false),
-          _buildScoreList(true),
-        ],
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: isDark
+                ? [mainBlue.withOpacity(0.95), Colors.grey[900]!]
+                : [mainBlue.withOpacity(0.12), Colors.grey[100]!],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: TabBarView(
+          controller: _tabController,
+          children: [
+            _buildScoreList(false, isDark, mainBlue, lightBlue),
+            _buildScoreList(true, isDark, mainBlue, lightBlue),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildScoreList(bool onlyUser) {
+  Widget _buildScoreList(bool onlyUser, bool isDark, Color mainBlue, Color lightBlue) {
     if (onlyUser && userId == null) {
       return const Center(child: Text('Necesitas iniciar sesión para ver tus puntajes'));
     }
 
     Query query = FirebaseFirestore.instance.collection('scores');
-    
     if (onlyUser) {
-      // Solo filtrar por userId sin ordenar
       query = query.where('userId', isEqualTo: userId);
     } else {
-      // Solo ordenar por puntaje para la vista global
-      query = query.orderBy('score', descending: true).limit(100); // Limitamos a 100 resultados
+      query = query.orderBy('score', descending: true).limit(100);
     }
 
     return StreamBuilder<QuerySnapshot>(
@@ -89,30 +117,63 @@ class _ScoresPageState extends State<ScoresPage> with SingleTickerProviderStateM
         }
 
         return ListView.builder(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
           itemCount: scores.length,
           itemBuilder: (context, index) {
             final data = scores[index].data() as Map<String, dynamic>;
             final isCurrentUser = data['userId'] == userId;
 
             return Card(
-              margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              color: isCurrentUser ? Colors.blue.withOpacity(0.1) : null,
+              margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+              color: isCurrentUser
+                  ? Colors.orangeAccent.withOpacity(isDark ? 0.18 : 0.12)
+                  : (isDark
+                      ? mainBlue.withOpacity(0.7)
+                      : Colors.white),
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(
+                  color: isCurrentUser
+                      ? Colors.orangeAccent
+                      : (isDark ? mainBlue.withOpacity(0.5) : mainBlue.withOpacity(0.12)),
+                  width: isCurrentUser ? 2 : 1,
+                ),
+              ),
               child: ListTile(
                 leading: CircleAvatar(
-                  backgroundColor: Colors.amber,
-                  child: Text('${index + 1}'),
+                  backgroundColor: isCurrentUser ? Colors.orangeAccent : Colors.amber,
+                  child: Text(
+                    '${index + 1}',
+                    style: TextStyle(
+                      color: isCurrentUser ? Colors.white : mainBlue,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
                 title: Text(
                   data['userName'] ?? 'Usuario',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : mainBlue,
+                  ),
                 ),
                 subtitle: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(data['triviaName'] ?? 'Trivia'),
+                    Text(
+                      data['triviaName'] ?? 'Trivia',
+                      style: TextStyle(
+                        color: isDark ? Colors.white70 : Colors.black87,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                     Text(
                       formatTimestamp(data['timestamp'] ?? ''),
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark ? Colors.grey[300] : mainBlue.withOpacity(0.7),
+                      ),
                     ),
                   ],
                 ),
@@ -123,7 +184,7 @@ class _ScoresPageState extends State<ScoresPage> with SingleTickerProviderStateM
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    '${data['score']}pts',
+                    '${data['score']} pts',
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,

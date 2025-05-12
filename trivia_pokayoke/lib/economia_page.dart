@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'controllers/trivia_controller.dart';
 import 'models/trivia_model.dart';
-import 'widgets/question_card.dart';
 
 class EconomiaPage extends StatelessWidget {
   const EconomiaPage({super.key});

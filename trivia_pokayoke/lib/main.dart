@@ -4,6 +4,7 @@ import 'login.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'providers/theme_provider.dart';
+import 'loading_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -40,7 +41,7 @@ class MyApp extends StatelessWidget {
             brightness: Brightness.dark,
           ),
           themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
-          home: const LoginPage(),
+          home: const LoadingPage(),
         );
       },
     );
