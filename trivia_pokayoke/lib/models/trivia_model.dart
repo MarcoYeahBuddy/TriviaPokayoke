@@ -5,31 +5,48 @@ class TriviaQuestion {
   final List<String> options;
   final int correctIndex;
   final String? explanation;
-  final String? latex;  // Para mostrar la fórmula matemática
   final List<Map<String, String>>? solutionSteps;
+  final String? latex; // Add this field
   int? selectedIndex;
+    final String? materia;
+      final String? carrera;
 
   TriviaQuestion({
     required this.question,
     required this.options,
     required this.correctIndex,
     this.explanation,
-    this.latex,
     this.solutionSteps,
-    this.selectedIndex,
+    this.latex, // Add this paramete
+    this.materia,
+    this.carrera
   });
 
   factory TriviaQuestion.fromMap(Map<String, dynamic> map) {
-    return TriviaQuestion(
-      question: map['question'] as String,
-      options: List<String>.from(map['options']),
-      correctIndex: map['correctIndex'] as int,
-      explanation: map['explanation'] as String?,
-      latex: map['latex'] as String?,
-      solutionSteps: map['solutionSteps'] != null
-          ? List<Map<String, String>>.from(
-              (map['solutionSteps'] as List).map((step) => Map<String, String>.from(step)))
-          : null,
-    );
+    // Detecta si es formato normal (Derecho) o cálculo
+    if (map.containsKey('pregunta')) {
+      // Formato normal
+      final opciones = List<String>.from(map['opciones'] ?? []);
+      final respuesta = map['respuesta'];
+      final correctIdx = opciones.indexOf(respuesta);
+      return TriviaQuestion(
+        question: map['pregunta'] ?? '',
+        options: opciones,
+        correctIndex: correctIdx,
+        explanation: map['explicación'] ?? '',
+        solutionSteps: null,
+      );
+    } else {
+      // Formato cálculo
+      return TriviaQuestion(
+        question: map['question'] ?? '',
+        options: List<String>.from(map['options'] ?? []),
+        correctIndex: map['correctIndex'] ?? 0,
+        explanation: map['explanation'] ?? '',
+        solutionSteps: (map['solutionSteps'] as List<dynamic>?)
+            ?.map((e) => Map<String, String>.from(e))
+            .toList(),
+      );
+    }
   }
 }

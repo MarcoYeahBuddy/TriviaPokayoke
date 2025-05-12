@@ -142,10 +142,10 @@ class _TriviaScreenState extends State<TriviaScreen> {
                     color: panelColor,
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: QuestionCard(
+                  /*child: QuestionCard(
                     question: controller.questions[controller.currentIndex],
-                    onOptionSelected: handleAnswer,
-                  ),
+                    onOptionSelected: handleAnswer,,
+                  ),*/
                 ),
               ),
             ],

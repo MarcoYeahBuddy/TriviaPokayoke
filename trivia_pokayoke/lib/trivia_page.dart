@@ -341,49 +341,64 @@ class _TriviaScreenState extends State<TriviaScreen> {
     return '$m:$s';
   }
 
-  Color _backgroundForMateria(String materia) {
-    switch (materia.toLowerCase()) {
+  Color _backgroundForMateria(String carrera) {
+    switch (carrera.toLowerCase()) {
       case 'economía':
         return const Color(0xFF8D6467);
       case 'contabilidad':
         return const Color(0xFF5D8B72);
       case 'marketing':
         return const Color(0xFF5A7F9C);
+      case 'ingeniería de sistemas':
       case 'ingenieria de sistemas':
-        return const Color(0xFF4A6C8C); // Ingeniería de Sistemas
+        return const Color(0xFF4A6C8C);
       case 'medicina':
-        return const Color(0xFFB56576); // Medicina
+        return const Color(0xFFB56576);
       case 'derecho':
-        return const Color(0xFF937DC2); // Derecho
+        return const Color(0xFF937DC2);
       default:
         return Colors.grey.shade400;
     }
   }
 
-  Color _panelForMateria(String materia) {
-    switch (materia.toLowerCase()) {
+  Color _panelForMateria(String carrera) {
+    switch (carrera.toLowerCase()) {
       case 'economía':
         return const Color(0xFF7A441C);
       case 'contabilidad':
         return const Color(0xFF3A6B50);
       case 'marketing':
         return const Color(0xFF2F5570);
+      case 'ingeniería de sistemas':
       case 'ingenieria de sistemas':
-        return const Color(0xFF2E4A62); // Ingeniería de Sistemas
+        return const Color(0xFF2E4A62);
       case 'medicina':
-        return const Color(0xFF924055); // Medicina
+        return const Color(0xFF924055);
       case 'derecho':
-        return const Color(0xFF6A55A4); // Derecho
+        return const Color(0xFF6A55A4);
       default:
         return Colors.grey.shade600;
     }
   }
 
-  @override
-  void dispose() {
-    timer?.cancel();
-    _timer.cancel();
-    super.dispose();
+  Color _gradientTopForMateria(String carrera) {
+    switch (carrera.toLowerCase()) {
+      case 'economía':
+        return const Color(0xFFCC8131);
+      case 'contabilidad':
+        return const Color(0xFF7FC7A1);
+      case 'marketing':
+        return const Color(0xFF7FB3D5);
+      case 'ingeniería de sistemas':
+      case 'ingenieria de sistemas':
+        return const Color(0xFF6CA0D1);
+      case 'medicina':
+        return const Color(0xFFF7A1B3);
+      case 'derecho':
+        return const Color(0xFFD1B3F7);
+      default:
+        return Colors.grey.shade200;
+    }
   }
 
   @override
@@ -395,18 +410,21 @@ class _TriviaScreenState extends State<TriviaScreen> {
     }
 
     final question = controller!.questions[controller!.currentIndex];
+    final bgColor = _backgroundForMateria(carrera);
+    final pnlColor = _panelForMateria(carrera);
+    final gradTop = _gradientTopForMateria(carrera);
 
     return Scaffold(
-      backgroundColor: backgroundColor,
+      backgroundColor: bgColor,
       body: Center(
         child: Container(
           width: 360,
           height: 740,
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [panelColor.withOpacity(0.7), panelColor],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
+              colors: [gradTop, pnlColor],
             ),
             borderRadius: BorderRadius.circular(10),
           ),
@@ -416,7 +434,7 @@ class _TriviaScreenState extends State<TriviaScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
                 decoration: BoxDecoration(
-                  color: panelColor,
+                  color: pnlColor,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -451,12 +469,13 @@ class _TriviaScreenState extends State<TriviaScreen> {
                   margin: const EdgeInsets.all(20),
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: panelColor,
+                    color: pnlColor,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: QuestionCard(
                     question: question,
                     onOptionSelected: handleAnswer,
+                    carrera: carrera,
                   ),
                 ),
               ),
