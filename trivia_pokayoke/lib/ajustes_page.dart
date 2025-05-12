@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'providers/theme_provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'login.dart';
+import 'utils/math_exercises_uploader.dart';
 
 class AjustesPage extends StatelessWidget {
   const AjustesPage({Key? key}) : super(key: key);
@@ -60,6 +61,30 @@ class AjustesPage extends StatelessWidget {
                   },
                 ),
               ),
+              const SizedBox(height: 16),
+              if (FirebaseAuth.instance.currentUser?.email == "admin@example.com")
+                Card(
+                  child: ListTile(
+                    title: const Text('Cargar Ejercicios de Cálculo'),
+                    leading: const Icon(Icons.upload),
+                    onTap: () async {
+                      try {
+                        await uploadCalculusExercises();
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Ejercicios cargados con éxito')),
+                          );
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Error: $e')),
+                          );
+                        }
+                      }
+                    },
+                  ),
+                ),
             ],
           ),
         );

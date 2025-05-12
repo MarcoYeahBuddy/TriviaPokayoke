@@ -1,8 +1,12 @@
+import 'package:flutter/foundation.dart';
+
 class TriviaQuestion {
   final String question;
   final List<String> options;
   final int correctIndex;
-  String? explanation;
+  final String? explanation;
+  final String? latex;  // Para mostrar la fórmula matemática
+  final List<Map<String, String>>? solutionSteps;
   int? selectedIndex;
 
   TriviaQuestion({
@@ -10,22 +14,22 @@ class TriviaQuestion {
     required this.options,
     required this.correctIndex,
     this.explanation,
+    this.latex,
+    this.solutionSteps,
     this.selectedIndex,
   });
 
-  factory TriviaQuestion.fromMap(Map<String, dynamic> data) {
-    final options = List<String>.from(data['opciones'] ?? []);
-    final correctIndex = options.indexOf(data['respuesta'] ?? '');
-
-    if (data['pregunta'] == null || options.isEmpty || correctIndex == -1) {
-      throw ArgumentError('Invalid data for TriviaQuestion'); // Lanzar una excepción si los datos no son válidos
-    }
-
+  factory TriviaQuestion.fromMap(Map<String, dynamic> map) {
     return TriviaQuestion(
-      question: data['pregunta'] ?? '',
-      options: options,
-      correctIndex: correctIndex,
-      explanation: data['explicación'],
+      question: map['question'] as String,
+      options: List<String>.from(map['options']),
+      correctIndex: map['correctIndex'] as int,
+      explanation: map['explanation'] as String?,
+      latex: map['latex'] as String?,
+      solutionSteps: map['solutionSteps'] != null
+          ? List<Map<String, String>>.from(
+              (map['solutionSteps'] as List).map((step) => Map<String, String>.from(step)))
+          : null,
     );
   }
 }

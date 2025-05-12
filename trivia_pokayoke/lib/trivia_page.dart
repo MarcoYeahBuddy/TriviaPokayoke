@@ -6,6 +6,7 @@ import '../controllers/trivia_controller.dart';
 import '../models/trivia_model.dart';
 import '../models/score_model.dart';
 import '../widgets/question_card.dart';
+import 'package:flutter_math_fork/flutter_math.dart';
 
 class TriviaScreen extends StatefulWidget {
   final String triviaId;
@@ -40,59 +41,64 @@ class _TriviaScreenState extends State<TriviaScreen> {
   }
 
   Future<void> _loadTrivia() async {
-    final doc = await FirebaseFirestore.instance
-        .collection('trivias')
-        .doc(widget.triviaId)
-        .get();
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('trivias')
+          .doc(widget.triviaId)
+          .get();
 
-    if (!doc.exists) {
-      _showError('Trivia no encontrada.');
-      return;
+      if (!doc.exists) {
+        _showError('Trivia no encontrada.');
+        return;
+      }
+
+      final data = doc.data()!;
+      final rawQuestions = data['preguntas'] as Map<String, dynamic>;
+      final questions = rawQuestions.values
+          .map((q) => TriviaQuestion.fromMap(q as Map<String, dynamic>))
+          .toList();
+
+      if (questions.isEmpty) {
+        _showError('No hay preguntas en esta trivia.');
+        return;
+      }
+
+      setState(() {
+        materia = data['materia'] ?? 'General';
+        docente = data['docente'] ?? 'Sin docente';
+        carrera = data['carrera'] ?? 'General';
+        remainingSeconds = questions.length * 15; // 15 segundos por pregunta
+
+        controller = TriviaController(questions);
+        isLoading = false;
+
+        _startTimer();
+      });
+    } catch (e) {
+      _showError('Error al cargar la trivia: $e');
     }
-
-    final data = doc.data()!;
-    final rawQuestions = data['preguntas'] as Map<String, dynamic>;
-    final questions = rawQuestions.values
-        .map((q) => TriviaQuestion.fromMap(q as Map<String, dynamic>))
-        .toList();
-
-    setState(() {
-      materia = data['materia'] ?? 'General';
-      docente = data['docente'] ?? 'Sin docente';
-      carrera = data['carrera'] ?? 'General';
-      // 15 segundos por pregunta
-      remainingSeconds = questions.length * 15;
-
-      backgroundColor = _backgroundForMateria(carrera);
-      panelColor = _panelForMateria(carrera);
-
-      controller = TriviaController(questions);
-      isLoading = false;
-
-      _startTimer();
-    });
   }
 
   void _startTimer() {
     timer = Timer.periodic(const Duration(seconds: 1), (t) {
-     if (!mounted) {
+      if (!mounted) {
         t.cancel();
         return;
       }
       
-      if (remainingSeconds <= 0) {
-        t.cancel();
-        _finishTrivia();
-      } else {
-        setState(() {
+      setState(() {
+        if (remainingSeconds > 0) {
           remainingSeconds--;
-        });
-      }
+        } else {
+          t.cancel();
+          _finishTrivia();
+        }
+      });
     });
   }
 
   void startTimer() {
-    _timeLeft = 10;
+    _timeLeft = 30; // Aumentamos el tiempo por pregunta a 30 segundos
     _questionStartTime = DateTime.now().millisecondsSinceEpoch;
     _timer = Timer.periodic(const Duration(seconds: 1), (t) {
       if (!mounted) {
@@ -109,6 +115,11 @@ class _TriviaScreenState extends State<TriviaScreen> {
         }
       });
     });
+  }
+
+  void pauseTimer() {
+    timer?.cancel();
+    _timer.cancel();
   }
 
   void handleTimeout() {
@@ -234,37 +245,85 @@ class _TriviaScreenState extends State<TriviaScreen> {
   }
 
   void handleAnswer(int selectedIndex) {
+    pauseTimer(); // Pausamos el tiempo al responder
     final question = controller!.questions[controller!.currentIndex];
     question.selectedIndex = selectedIndex;
 
     final isCorrect = controller!.isCorrect(selectedIndex);
     calculateScore(isCorrect);
-    final explanation = question.explanation;
     final isLastQuestion = controller!.isLastQuestion();
 
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => AlertDialog(
-        title: Text(isCorrect ? '✅ ¡Correcto!' : '❌ Incorrecto'),
-        content: !isCorrect && explanation != null
-            ? Text('Explicación: $explanation')
-            : null,
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context); // Cierra el diálogo actual
-              if (isLastQuestion) {
-                saveScore();
-                _finishTrivia();
-              } else {
-                setState(() => controller!.nextQuestion());
-                startTimer();
-              }
-            },
-            child: Text(isLastQuestion ? 'Finalizar' : 'Continuar'),
-          )
-        ],
+      builder: (_) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.9,
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                isCorrect ? '✅ ¡Correcto!' : '❌ Incorrecto',
+                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 20),
+              if (question.explanation != null) ...[
+                Text(question.explanation!),
+                const SizedBox(height: 16),
+              ],
+              if (question.solutionSteps != null) ...[
+                const Text(
+                  'Explicación paso a paso:',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.4,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      children: question.solutionSteps!.map((step) => Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            step['explanation']!,
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                          if (step['latex'] != null) ...[
+                            const SizedBox(height: 8),
+                            Math.tex(
+                              step['latex']!,
+                              textStyle: const TextStyle(fontSize: 18),
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+                        ],
+                      )).toList(),
+                    ),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  if (isLastQuestion) {
+                    saveScore();
+                    _finishTrivia();
+                  } else {
+                    setState(() => controller!.nextQuestion());
+                    startTimer(); // Reiniciamos el tiempo al pasar a la siguiente pregunta
+                  }
+                },
+                child: Text(
+                  isLastQuestion ? 'Finalizar' : 'Siguiente Pregunta',
+                  style: const TextStyle(fontSize: 16),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

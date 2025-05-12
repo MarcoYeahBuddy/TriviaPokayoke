@@ -1,50 +1,81 @@
 import 'package:flutter/material.dart';
-import '../../models/trivia_model.dart';
+import 'package:flutter_math_fork/flutter_math.dart';
+import '../models/trivia_model.dart';
 
 class QuestionCard extends StatelessWidget {
   final TriviaQuestion question;
   final Function(int) onOptionSelected;
 
   const QuestionCard({
-    super.key,
+    Key? key,
     required this.question,
     required this.onOptionSelected,
-  });
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          margin: const EdgeInsets.only(bottom: 16),
-          color: const Color(0xFFB36B29),
-          child: Text(
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Pregunta
+          Text(
             question.question,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
-              color: Colors.white,
               fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : Colors.black87,
             ),
           ),
-        ),
-        ...List.generate(question.options.length, (index) {
-          return Container(
-            margin: const EdgeInsets.symmetric(vertical: 6),
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFB36B29),
+          const SizedBox(height: 16),
+
+          // Fórmula LaTeX si existe
+          if (question.latex != null) ...[
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: isDark ? Colors.grey[850] : Colors.grey[200],
+                borderRadius: BorderRadius.circular(8),
               ),
-              onPressed: () => onOptionSelected(index),
-              child: Text(
-                question.options[index],
-                style: const TextStyle(color: Colors.white),
+              child: Math.tex(
+                question.latex!,
+                textStyle: TextStyle(
+                  fontSize: 20,
+                  color: isDark ? Colors.white : Colors.black87,
+                ),
               ),
             ),
-          );
-        }),
-      ],
+            const SizedBox(height: 24),
+          ],
+
+          // Opciones
+          ...question.options.asMap().entries.map((entry) {
+            final index = entry.key;
+            final option = entry.value;
+
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: isDark ? Colors.grey[800] : Colors.white,
+                  padding: const EdgeInsets.all(16),
+                  alignment: Alignment.centerLeft,
+                ),
+                onPressed: () => onOptionSelected(index),
+                child: Math.tex(
+                  option,
+                  textStyle: TextStyle(
+                    fontSize: 16,
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
+                ),
+              ),
+            );
+          }),
+        ],
+      ),
     );
   }
 }
