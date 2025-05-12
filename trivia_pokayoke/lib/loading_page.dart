@@ -1,26 +1,8 @@
 import 'package:flutter/material.dart';
 import 'login.dart';
 
-class LoadingPage extends StatefulWidget {
+class LoadingPage extends StatelessWidget {
   const LoadingPage({super.key});
-
-  @override
-  State<LoadingPage> createState() => _LoadingPageState();
-}
-
-class _LoadingPageState extends State<LoadingPage> {
-  @override
-  void initState() {
-    super.initState();
-    // Simula una carga de 1.5 segundos y luego navega al LoginPage
-    Future.delayed(const Duration(milliseconds: 1500), () {
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const LoginPage()),
-        );
-      }
-    });
-  }
 
   @override
   Widget build(BuildContext context) {

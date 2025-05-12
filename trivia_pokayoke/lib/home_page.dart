@@ -5,7 +5,8 @@ import 'login.dart';
 import 'perfil_page.dart';
 import 'ajustes_page.dart';
 import 'trivia_page.dart';
-/*import 'subirTriviademo.dart';*/
+import 'subirTriviademo.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class HomePage extends StatefulWidget {
   final String nombre;
@@ -30,10 +31,76 @@ class _HomePageState extends State<HomePage> {
     {'sigla': 'DER', 'nombre': 'Derecho'},
   ];
 
-  void _logout() {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const LoginPage()),
+  void _logout() async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final mainBlue = const Color(0xFF1B2F5C);
+
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: isDark ? mainBlue.withOpacity(0.98) : mainBlue.withOpacity(0.92),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Image.asset(
+                "images/cerebro_sad.png",
+                height: 54,
+                fit: BoxFit.contain,
+              ),
+              const SizedBox(height: 18),
+              Text(
+                '¿Deseas cerrar sesión?',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.1,
+                  shadows: [
+                    Shadow(
+                      color: Colors.black.withOpacity(0.18),
+                      blurRadius: 2,
+                      offset: const Offset(1, 1),
+                    ),
+                  ],
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 18),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Cancelar', style: TextStyle(fontSize: 16, color: Colors.white70)),
+                  ),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onPressed: () async {
+                      Navigator.of(context).pop();
+                      await FirebaseAuth.instance.signOut();
+                      if (mounted) {
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(builder: (_) => const LoginPage()),
+                          (route) => false,
+                        );
+                      }
+                    },
+                    child: const Text('Cerrar sesión', style: TextStyle(fontSize: 16)),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -141,11 +208,11 @@ class _HomePageState extends State<HomePage> {
             ),
             Wrap(
               spacing: 8,
-              runSpacing: 0, // <-- Mantén esto para evitar espacio vertical extra
+              runSpacing: 0,
               children: _categorias.map((categoria) {
                 final isSelected = _selectedCategoria == categoria['nombre'];
                 return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 0), // <-- Elimina padding vertical
+                  padding: const EdgeInsets.symmetric(vertical: 0),
                   child: ChoiceChip(
                     label: Text(
                       categoria['sigla']!,
@@ -160,8 +227,8 @@ class _HomePageState extends State<HomePage> {
                     selectedColor: mainBlue,
                     backgroundColor: isDark ? mainBlue.withOpacity(0.25) : lightBlue.withOpacity(0.10),
                     materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    visualDensity: const VisualDensity(horizontal: -2, vertical: -4), // <-- Más compacto aún
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0), // <-- Sin padding vertical
+                    visualDensity: const VisualDensity(horizontal: -2, vertical: -4),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
                     onSelected: (_) {
                       setState(() => _selectedCategoria = categoria['nombre']!);
                     },
@@ -201,7 +268,7 @@ class _HomePageState extends State<HomePage> {
                           crossAxisCount: crossAxisCount,
                           crossAxisSpacing: 18,
                           mainAxisSpacing: 18,
-                          childAspectRatio: 1.15, // <-- Aumenta el aspect ratio para reducir la altura
+                          childAspectRatio: 1.15,
                         ),
                         itemCount: docs.length,
                         itemBuilder: (context, index) {
@@ -219,31 +286,154 @@ class _HomePageState extends State<HomePage> {
 
                           return GestureDetector(
                             onTap: () {
-                              debugPrint('Selected trivia ID: $docId');
                               showDialog(
                                 context: context,
-                                builder: (_) => AlertDialog(
-                                  title: Text(materia),
-                                  content: Text('Docente: $docente\nSigla: $sigla\nDuración: $duracion\n\n¿Listo para comenzar la trivia?'),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () => Navigator.pop(context),
-                                      child: const Text('Cancelar'),
+                                barrierDismissible: false,
+                                builder: (_) {
+                                  return Dialog(
+                                    backgroundColor: isDark
+                                        ? mainBlue.withOpacity(0.98)
+                                        : mainBlue.withOpacity(0.92),
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(24)),
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 32, horizontal: 24),
+                                      child: ConstrainedBox(
+                                        constraints: const BoxConstraints(
+                                            maxWidth: 350, minWidth: 220),
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Container(
+                                              decoration: BoxDecoration(
+                                                color: color,
+                                                shape: BoxShape.circle,
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: Colors.black.withOpacity(0.08),
+                                                    blurRadius: 12,
+                                                    offset: const Offset(0, 4),
+                                                  ),
+                                                ],
+                                              ),
+                                              padding: const EdgeInsets.all(18),
+                                              child: Icon(
+                                                Icons.quiz,
+                                                color: Colors.white,
+                                                size: 48,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 18),
+                                            Text(
+                                              materia,
+                                              style: const TextStyle(
+                                                fontSize: 22,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.white,
+                                                letterSpacing: 1.1,
+                                                shadows: [
+                                                  Shadow(
+                                                    color: Colors.black26,
+                                                    blurRadius: 2,
+                                                    offset: Offset(1, 1),
+                                                  ),
+                                                ],
+                                              ),
+                                              textAlign: TextAlign.center,
+                                            ),
+                                            const SizedBox(height: 10),
+                                            Container(
+                                              width: double.infinity,
+                                              margin: const EdgeInsets.symmetric(vertical: 6),
+                                              padding: const EdgeInsets.all(12),
+                                              decoration: BoxDecoration(
+                                                color: color.withOpacity(0.15),
+                                                borderRadius: BorderRadius.circular(12),
+                                              ),
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    'Docente: $docente',
+                                                    style: const TextStyle(
+                                                      color: Colors.white70,
+                                                      fontSize: 15,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 4),
+                                                  Text(
+                                                    'Sigla: $sigla',
+                                                    style: const TextStyle(
+                                                      color: Colors.white70,
+                                                      fontSize: 15,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 4),
+                                                  Text(
+                                                    'Duración: $duracion',
+                                                    style: const TextStyle(
+                                                      color: Colors.white70,
+                                                      fontSize: 15,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            const SizedBox(height: 10),
+                                            Text(
+                                              '¿Listo para comenzar la trivia?',
+                                              style: TextStyle(
+                                                color: Colors.orangeAccent.shade200,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 16,
+                                              ),
+                                              textAlign: TextAlign.center,
+                                            ),
+                                            const SizedBox(height: 24),
+                                            Row(
+                                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                              children: [
+                                                TextButton(
+                                                  onPressed: () => Navigator.pop(context),
+                                                  child: const Text(
+                                                    'Cancelar',
+                                                    style: TextStyle(
+                                                      fontSize: 16,
+                                                      color: Colors.white70,
+                                                    ),
+                                                  ),
+                                                ),
+                                                ElevatedButton(
+                                                  style: ElevatedButton.styleFrom(
+                                                    backgroundColor: color,
+                                                    foregroundColor: Colors.white,
+                                                    shape: RoundedRectangleBorder(
+                                                      borderRadius: BorderRadius.circular(12),
+                                                    ),
+                                                    padding: const EdgeInsets.symmetric(
+                                                        horizontal: 18, vertical: 10),
+                                                  ),
+                                                  onPressed: () {
+                                                    Navigator.pop(context);
+                                                    Navigator.push(
+                                                      context,
+                                                      MaterialPageRoute(
+                                                        builder: (_) => TriviaScreen(triviaId: docId),
+                                                      ),
+                                                    );
+                                                  },
+                                                  child: const Text('¡Empezar!',
+                                                      style: TextStyle(fontSize: 16)),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      ),
                                     ),
-                                    ElevatedButton(
-                                      onPressed: () {
-                                        Navigator.pop(context);
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (_) => TriviaScreen(triviaId: docId),
-                                          ),
-                                        );
-                                      },
-                                      child: const Text('¡Empezar!'),
-                                    ),
-                                  ],
-                                ),
+                                  );
+                                },
                               );
                             },
                             child: Card(
@@ -258,24 +448,24 @@ class _HomePageState extends State<HomePage> {
                               child: Column(
                                 children: [
                                   Container(
-                                    height: 80, // <-- Reduce la altura del header de la card
+                                    height: 80,
                                     decoration: BoxDecoration(
                                       color: color,
                                       borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
                                     ),
                                     child: const Center(
-                                      child: Icon(Icons.school, size: 40, color: Colors.white70), // Icono más pequeño
+                                      child: Icon(Icons.school, size: 40, color: Colors.white70),
                                     ),
                                   ),
                                   Padding(
-                                    padding: const EdgeInsets.all(12), // Menos padding
+                                    padding: const EdgeInsets.all(12),
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           materia,
                                           style: TextStyle(
-                                            fontSize: 16, // Más pequeño
+                                            fontSize: 16,
                                             fontWeight: FontWeight.bold,
                                             color: isDark ? Colors.white : mainBlue,
                                           ),
@@ -379,7 +569,7 @@ class _HomePageState extends State<HomePage> {
       body: SafeArea(child: _getBody()),
       bottomNavigationBar: Theme(
         data: Theme.of(context).copyWith(
-          canvasColor: mainBlue, // TabBar siempre azul marino
+          canvasColor: mainBlue,
           primaryColor: Colors.white,
           textTheme: Theme.of(context).textTheme.copyWith(
                 bodySmall: const TextStyle(

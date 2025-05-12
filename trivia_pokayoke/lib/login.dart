@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:async';
 
 import 'home_page.dart';
 import 'register.dart';
@@ -17,10 +18,18 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _passController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
+  int _intentosRestantes = 3;
+  bool _showPassword = false;
+  bool _isLoading = false;
+
   void _login() async {
     if (_formKey.currentState!.validate()) {
       final email = _userController.text.trim();
       final password = _passController.text;
+
+      setState(() {
+        _isLoading = true;
+      });
 
       try {
         final userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
@@ -42,26 +51,50 @@ class _LoginPageState extends State<LoginPage> {
         final String nombre = data['nombre'];
         final String apellido = data['apellido'];
 
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => HomePage(nombre: nombre, apellido: apellido),
-          ),
-        );
+        setState(() {
+          _isLoading = false;
+        });
+
+        if (mounted) {
+          final isDark = Theme.of(context).brightness == Brightness.dark;
+          final mainBlue = const Color(0xFF1B2F5C);
+
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => _LoginSuccessDialog(
+              isDark: isDark,
+              mainBlue: mainBlue,
+              onContinue: () {
+                Navigator.of(context).pop();
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => HomePage(nombre: nombre, apellido: apellido),
+                  ),
+                );
+              },
+            ),
+          );
+        }
       } on FirebaseAuthException catch (e) {
+        setState(() {
+          _isLoading = false;
+        });
         String errorMessage;
-        switch (e.code) {
-          case 'user-not-found':
-            errorMessage = 'No se encontró un usuario con ese correo.';
-            break;
-          case 'wrong-password':
-            errorMessage = 'Contraseña incorrecta.';
-            break;
-          case 'invalid-email':
-            errorMessage = 'Correo electrónico inválido.';
-            break;
-          default:
-            errorMessage = 'Error: ${e.message}';
+        if (e.code == 'wrong-password') {
+          _intentosRestantes--;
+          if (_intentosRestantes > 0) {
+            errorMessage = 'Contraseña incorrecta. Intentos restantes: $_intentosRestantes';
+          } else {
+            errorMessage = 'Demasiados intentos fallidos. Intenta más tarde.';
+          }
+        } else if (e.code == 'user-not-found') {
+          errorMessage = 'No se encontró un usuario con ese correo.';
+        } else if (e.code == 'invalid-email') {
+          errorMessage = 'Correo electrónico inválido.';
+        } else {
+          errorMessage = 'Error: ${e.message}';
         }
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -160,30 +193,45 @@ class _LoginPageState extends State<LoginPage> {
                             const SizedBox(height: 20),
                             TextFormField(
                               controller: _passController,
-                              obscureText: true,
+                              obscureText: !_showPassword,
                               style: const TextStyle(color: Colors.white),
-                              decoration: _inputDecoration('Contraseña'),
+                              decoration: _inputDecoration('Contraseña').copyWith(
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _showPassword ? Icons.visibility : Icons.visibility_off,
+                                    color: Colors.white70,
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _showPassword = !_showPassword;
+                                    });
+                                  },
+                                ),
+                              ),
                               validator: (value) =>
                                   value == null || value.isEmpty ? 'Ingrese su contraseña' : null,
                             ),
                             const SizedBox(height: 30),
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton(
-                                onPressed: _login,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.orangeAccent,
-                                  padding: const EdgeInsets.symmetric(vertical: 16),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(14),
+                            if (_isLoading)
+                              const CircularProgressIndicator(color: Colors.orangeAccent)
+                            else
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton(
+                                  onPressed: _intentosRestantes > 0 ? _login : null,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.orangeAccent,
+                                    padding: const EdgeInsets.symmetric(vertical: 16),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    'Entrar',
+                                    style: TextStyle(fontSize: 18, color: Colors.white),
                                   ),
                                 ),
-                                child: const Text(
-                                  'Entrar',
-                                  style: TextStyle(fontSize: 18, color: Colors.white),
-                                ),
                               ),
-                            ),
                             const SizedBox(height: 20),
                             TextButton(
                               onPressed: () {
@@ -291,6 +339,105 @@ class _LoginPageState extends State<LoginPage> {
       ),
       filled: true,
       fillColor: const Color(0xFF2E3A5F),
+    );
+  }
+}
+
+class _LoginSuccessDialog extends StatefulWidget {
+  final bool isDark;
+  final Color mainBlue;
+  final VoidCallback onContinue;
+
+  const _LoginSuccessDialog({
+    required this.isDark,
+    required this.mainBlue,
+    required this.onContinue,
+  });
+
+  @override
+  State<_LoginSuccessDialog> createState() => _LoginSuccessDialogState();
+}
+
+class _LoginSuccessDialogState extends State<_LoginSuccessDialog> {
+  int seconds = 2;
+  late Timer _timer;
+  bool canContinue = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (!mounted) return;
+      setState(() {
+        if (seconds > 1) {
+          seconds--;
+        } else {
+          canContinue = true;
+          _timer.cancel();
+          // Ingresar automáticamente al terminar el timer
+          Future.microtask(() {
+            if (mounted) widget.onContinue();
+          });
+        }
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: widget.isDark ? widget.mainBlue.withOpacity(0.98) : widget.mainBlue.withOpacity(0.92),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset(
+              "images/cerebro_bien.png",
+              height: 54,
+              fit: BoxFit.contain,
+            ),
+            const SizedBox(height: 18),
+            const Text(
+              '¡Inicio de sesión exitoso!',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.1,
+                shadows: [
+                  Shadow(
+                    color: Colors.black26,
+                    blurRadius: 2,
+                    offset: Offset(1, 1),
+                  ),
+                ],
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 18),
+            canContinue
+                ? const SizedBox.shrink()
+                : Column(
+                    children: [
+                      const CircularProgressIndicator(color: Colors.orangeAccent),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Entrando en $seconds...',
+                        style: const TextStyle(color: Colors.white70, fontSize: 15),
+                      ),
+                    ],
+                  ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -209,36 +209,302 @@ class _TriviaScreenState extends State<TriviaScreen> {
         .add(score.toMap());
   }
 
-  void _finishTrivia() {
+  void _finishTrivia() async {
     if (!mounted) return;
-    
+
     timer?.cancel();
     _timer.cancel();
-    
+
+    final Color carreraColor = _panelForMateria(carrera);
+    final Color bgColor = _backgroundForMateria(carrera);
+
+    // Frases motivadoras
+    final frases = [
+      "¡Cada intento te hace mejor!",
+      "¡Sigue adelante, el aprendizaje es progreso!",
+      "¡No te rindas, cada error es una oportunidad!",
+      "¡Lo importante es participar y aprender!",
+      "¡Hoy es un gran día para superarte!",
+      "¡Tu esfuerzo vale más que el resultado!",
+      "¡La práctica te llevará lejos!",
+      "¡Sigue jugando, tu mejor versión está en camino!",
+      "¡Eres capaz de lograr grandes cosas!",
+      "¡El conocimiento es tu mejor recompensa!",
+    ];
+
+    // Selecciona una frase aleatoria
+    final fraseMotivadora = (frases..shuffle()).first;
+
+    // Determina si el puntaje es bajo (puedes ajustar el umbral)
+    final bool puntajeBajo = _currentScore < 300;
+
+    // Determina si el puntaje fue actualizado
+    bool puntajeActualizado = false;
+    int? puntajeAnterior;
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final previousScores = await FirebaseFirestore.instance
+          .collection('scores')
+          .where('userId', isEqualTo: user.uid)
+          .where('triviaId', isEqualTo: widget.triviaId)
+          .get();
+
+      if (previousScores.docs.isNotEmpty) {
+        puntajeAnterior = previousScores.docs
+            .map((doc) => doc.data()['score'] as int)
+            .reduce((max, score) => score > max ? score : max);
+
+        if (_currentScore > puntajeAnterior) {
+          puntajeActualizado = true;
+        }
+      } else {
+        puntajeActualizado = true; // Primer intento siempre es actualización
+      }
+    }
+
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => WillPopScope(
         onWillPop: () async => false,
-        child: AlertDialog(
-          title: const Text('🎉 ¡Trivia Finalizada!'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
+        child: Dialog(
+          backgroundColor: carreraColor,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
+            decoration: BoxDecoration(
+              color: carreraColor,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: bgColor.withOpacity(0.18),
+                  blurRadius: 18,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+              border: Border.all(color: bgColor, width: 3),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.85),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.08),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  padding: const EdgeInsets.all(18),
+                  child: Image.asset(
+                    puntajeBajo ? 'images/cerebro_sad.png' : 'images/cerebro_bien.png',
+                    height: 70,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  '🎉 ¡Trivia Finalizada!',
+                  style: TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    letterSpacing: 1.2,
+                    shadows: [
+                      Shadow(
+                        color: Colors.black.withOpacity(0.18),
+                        blurRadius: 2,
+                        offset: const Offset(1, 1),
+                      ),
+                    ],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 18),
+                Container(
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 18),
+                  decoration: BoxDecoration(
+                    color: bgColor.withOpacity(0.18),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        'Puntaje Final: $_currentScore pts',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.orangeAccent,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Respuestas Correctas: ${controller!.getScore()}/${controller!.questions.length}',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.white.withOpacity(0.95),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      if (puntajeActualizado)
+                        Text(
+                          puntajeAnterior != null
+                              ? "¡Felicidades! Mejoraste tu puntaje anterior (${puntajeAnterior} pts)."
+                              : "¡Tu puntaje ha sido registrado!",
+                          style: const TextStyle(
+                            color: Colors.greenAccent,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
+                          textAlign: TextAlign.center,
+                        )
+                      else if (puntajeAnterior != null)
+                        Text(
+                          "No superaste tu mejor puntaje (${puntajeAnterior} pts), ¡pero puedes intentarlo de nuevo!",
+                          style: const TextStyle(
+                            color: Colors.yellowAccent,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  fraseMotivadora,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontStyle: FontStyle.italic,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    if (mounted) {
+                      Navigator.of(context).popUntil((route) => route.isFirst);
+                    }
+                  },
+                  icon: const Icon(Icons.home, color: Colors.white),
+                  label: const Text('Volver al inicio', style: TextStyle(fontSize: 16, color: Colors.white)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: bgColor,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (isLoading || controller == null) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final question = controller!.questions[controller!.currentIndex];
+    final bgColor = _backgroundForMateria(carrera);
+    final pnlColor = _panelForMateria(carrera);
+    final gradTop = _gradientTopForMateria(carrera);
+
+    return Scaffold(
+      backgroundColor: bgColor,
+      body: Center(
+        child: Container(
+          width: 360,
+          height: 740,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [gradTop, pnlColor],
+            ),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Column(
             children: [
-              Text('Puntaje Final: $_currentScore pts'),
-              Text('Respuestas Correctas: ${controller!.getScore()}/${controller!.questions.length}'),
+              const SizedBox(height: 40),
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+                decoration: BoxDecoration(
+                  color: pnlColor,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  materia.toUpperCase(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 2,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Docente: $docente',
+                style: const TextStyle(color: Colors.white70, fontSize: 16),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                '⏳ Tiempo: ${_formatTime(remainingSeconds)}',
+                style: const TextStyle(color: Colors.white, fontSize: 16),
+              ),
+              const SizedBox(height: 20),
+              // Logo neutral personalizado
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.85),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                padding: const EdgeInsets.all(12),
+                child: Image.asset(
+                  'images/cerebro_question.png',
+                  height: 60,
+                  fit: BoxFit.contain,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Expanded(
+                child: Container(
+                  margin: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: pnlColor,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: QuestionCard(
+                    question: question,
+                    onOptionSelected: handleAnswer,
+                    carrera: carrera,
+                  ),
+                ),
+              ),
             ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                if (mounted) {
-                  Navigator.of(context).popUntil((route) => route.isFirst);
-                }
-              },
-              child: const Text('Volver al inicio'),
-            ),
-          ],
         ),
       ),
     );
@@ -258,70 +524,119 @@ class _TriviaScreenState extends State<TriviaScreen> {
       barrierDismissible: false,
       builder: (_) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: _panelForMateria(carrera),
         child: Container(
           width: MediaQuery.of(context).size.width * 0.9,
           padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                isCorrect ? '✅ ¡Correcto!' : '❌ Incorrecto',
-                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 20),
-              if (question.explanation != null) ...[
-                Text(question.explanation!),
-                const SizedBox(height: 16),
-              ],
-              if (question.solutionSteps != null) ...[
-                const Text(
-                  'Explicación paso a paso:',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Imagen decorativa para panel de explicación
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.85),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.08),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  padding: const EdgeInsets.all(12),
+                  child: Image.asset(
+                    'images/cerebro_jugando.png',
+                    height: 50,
+                    fit: BoxFit.contain,
+                  ),
                 ),
                 const SizedBox(height: 16),
-                SizedBox(
-                  height: MediaQuery.of(context).size.height * 0.4,
-                  child: SingleChildScrollView(
-                    child: Column(
-                      children: question.solutionSteps!.map((step) => Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            step['explanation']!,
-                            style: const TextStyle(fontSize: 16),
-                          ),
-                          if (step['latex'] != null) ...[
-                            const SizedBox(height: 8),
-                            Math.tex(
-                              step['latex']!,
-                              textStyle: const TextStyle(fontSize: 18),
-                            ),
-                            const SizedBox(height: 16),
-                          ],
-                        ],
-                      )).toList(),
+                Text(
+                  isCorrect ? '✅ ¡Correcto!' : '❌ Incorrecto',
+                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+                ),
+                const SizedBox(height: 20),
+                if (question.explanation != null) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(14),
+                    margin: const EdgeInsets.only(bottom: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.10),
+                      borderRadius: BorderRadius.circular(12),
                     ),
+                    child: Text(
+                      question.explanation!,
+                      style: const TextStyle(color: Colors.white, fontSize: 16),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                if (question.solutionSteps != null) ...[
+                  const Text(
+                    'Explicación paso a paso:',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: SizedBox(
+                      height: MediaQuery.of(context).size.height * 0.4,
+                      child: SingleChildScrollView(
+                        child: Column(
+                          children: question.solutionSteps!.map((step) => Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                step['explanation']!,
+                                style: const TextStyle(fontSize: 16, color: Colors.white),
+                              ),
+                              if (step['latex'] != null) ...[
+                                const SizedBox(height: 8),
+                                Math.tex(
+                                  step['latex']!,
+                                  textStyle: const TextStyle(fontSize: 18, color: Colors.white),
+                                ),
+                                const SizedBox(height: 16),
+                              ],
+                            ],
+                          )).toList(),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    if (isLastQuestion) {
+                      saveScore();
+                      _finishTrivia();
+                    } else {
+                      setState(() => controller!.nextQuestion());
+                      // Reinicia ambos timers al pasar a la siguiente pregunta
+                      startTimer(); // Timer de pregunta
+                      _startTimer(); // Timer global
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _backgroundForMateria(carrera),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: Text(
+                    isLastQuestion ? 'Finalizar' : 'Siguiente Pregunta',
+                    style: const TextStyle(fontSize: 16),
                   ),
                 ),
               ],
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  if (isLastQuestion) {
-                    saveScore();
-                    _finishTrivia();
-                  } else {
-                    setState(() => controller!.nextQuestion());
-                    startTimer(); // Reiniciamos el tiempo al pasar a la siguiente pregunta
-                  }
-                },
-                child: Text(
-                  isLastQuestion ? 'Finalizar' : 'Siguiente Pregunta',
-                  style: const TextStyle(fontSize: 16),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -399,90 +714,5 @@ class _TriviaScreenState extends State<TriviaScreen> {
       default:
         return Colors.grey.shade200;
     }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (isLoading || controller == null) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
-
-    final question = controller!.questions[controller!.currentIndex];
-    final bgColor = _backgroundForMateria(carrera);
-    final pnlColor = _panelForMateria(carrera);
-    final gradTop = _gradientTopForMateria(carrera);
-
-    return Scaffold(
-      backgroundColor: bgColor,
-      body: Center(
-        child: Container(
-          width: 360,
-          height: 740,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [gradTop, pnlColor],
-            ),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Column(
-            children: [
-              const SizedBox(height: 40),
-              Container(
-                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-                decoration: BoxDecoration(
-                  color: pnlColor,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  materia.toUpperCase(),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 2,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                'Docente: $docente',
-                style: const TextStyle(color: Colors.white70, fontSize: 16),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                '⏳ Tiempo: ${_formatTime(remainingSeconds)}',
-                style: const TextStyle(color: Colors.white, fontSize: 16),
-              ),
-              const SizedBox(height: 20),
-              const CircleAvatar(
-                radius: 40,
-                backgroundColor: Colors.amber,
-                child: Icon(Icons.emoji_emotions, color: Colors.black, size: 40),
-              ),
-              const SizedBox(height: 20),
-              Expanded(
-                child: Container(
-                  margin: const EdgeInsets.all(20),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: pnlColor,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: QuestionCard(
-                    question: question,
-                    onOptionSelected: handleAnswer,
-                    carrera: carrera,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 }

@@ -80,13 +80,73 @@ class AjustesPage extends StatelessWidget {
                     ),
                     leading: const Icon(Icons.logout, color: Colors.red),
                     onTap: () async {
-                      await FirebaseAuth.instance.signOut();
-                      if (context.mounted) {
-                        Navigator.of(context).pushAndRemoveUntil(
-                          MaterialPageRoute(builder: (_) => const LoginPage()),
-                          (route) => false,
-                        );
-                      }
+                      showDialog(
+                        context: context,
+                        builder: (context) => Dialog(
+                          backgroundColor: isDark ? mainBlue.withOpacity(0.98) : mainBlue.withOpacity(0.92),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Image.asset(
+                                  "images/cerebro_sad.png",
+                                  height: 54,
+                                  fit: BoxFit.contain,
+                                ),
+                                const SizedBox(height: 18),
+                                Text(
+                                  '¿Deseas cerrar sesión?',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 1.1,
+                                    shadows: [
+                                      Shadow(
+                                        color: Colors.black.withOpacity(0.18),
+                                        blurRadius: 2,
+                                        offset: const Offset(1, 1),
+                                      ),
+                                    ],
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 18),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                  children: [
+                                    TextButton(
+                                      onPressed: () => Navigator.of(context).pop(),
+                                      child: const Text('Cancelar', style: TextStyle(fontSize: 16, color: Colors.white70)),
+                                    ),
+                                    ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.red,
+                                        foregroundColor: Colors.white,
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                      ),
+                                      onPressed: () async {
+                                        Navigator.of(context).pop();
+                                        await FirebaseAuth.instance.signOut();
+                                        if (context.mounted) {
+                                          Navigator.pushAndRemoveUntil(
+                                            context,
+                                            MaterialPageRoute(builder: (_) => const LoginPage()),
+                                            (route) => false,
+                                          );
+                                        }
+                                      },
+                                      child: const Text('Cerrar sesión', style: TextStyle(fontSize: 16)),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
                     },
                   ),
                 ),
