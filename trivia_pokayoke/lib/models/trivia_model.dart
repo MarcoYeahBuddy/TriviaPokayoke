@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+// This file defines the MathExercise and Step classes, which are used to represent a math exercise and its solution steps.
 
 class TriviaQuestion {
   final String question;

@@ -1,5 +1,6 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
-import 'login.dart';
 
 class LoadingPage extends StatelessWidget {
   const LoadingPage({super.key});

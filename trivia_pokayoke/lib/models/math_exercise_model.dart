@@ -1,5 +1,4 @@
-import 'package:flutter/material.dart';
-
+// This file defines the MathExercise and Step classes, which are used to represent a math exercise and its solution steps.
 class MathExercise {
   final String question;
   final String latex; // Para mostrar la fórmula matemática

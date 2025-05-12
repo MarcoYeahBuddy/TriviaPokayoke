@@ -5,7 +5,6 @@ import 'login.dart';
 import 'perfil_page.dart';
 import 'ajustes_page.dart';
 import 'trivia_page.dart';
-import 'subirTriviademo.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class HomePage extends StatefulWidget {
@@ -35,7 +34,6 @@ class _HomePageState extends State<HomePage> {
   List<QueryDocumentSnapshot>? _allTriviasCache;
   List<QueryDocumentSnapshot>? _filteredTrivias;
   bool _isLoadingTrivias = false;
-  String _lastCategoria = 'Todas las carreras';
 
   @override
   void initState() {
@@ -64,7 +62,6 @@ class _HomePageState extends State<HomePage> {
     }
     final snapshot = await query.get();
     _allTriviasCache = snapshot.docs;
-    _lastCategoria = _selectedCategoria;
     _filterTrivias();
     setState(() {
       _isLoadingTrivias = false;
@@ -615,7 +612,6 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final mainBlue = const Color(0xFF1B2F5C);
-    final lightBlue = const Color(0xFF3A4D7A);
 
     return Scaffold(
       backgroundColor: isDark ? mainBlue.withOpacity(0.95) : mainBlue.withOpacity(0.07),

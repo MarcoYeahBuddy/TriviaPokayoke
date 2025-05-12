@@ -123,23 +123,6 @@ class _RegisterPageState extends State<RegisterPage> {
                         key: _formKey,
                         child: Column(
                           children: [
-                            // Botón de regreso al login
-                            Align(
-                              alignment: Alignment.centerLeft,
-                              child: TextButton.icon(
-                                onPressed: () => Navigator.pop(context),
-                                icon: const Icon(Icons.arrow_back, color: Colors.white70, size: 20),
-                                label: const Text(
-                                  'Atrás',
-                                  style: TextStyle(color: Colors.white70, fontSize: 15),
-                                ),
-                                style: TextButton.styleFrom(
-                                  foregroundColor: Colors.white70,
-                                  padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
                             const Text(
                               'Registro de Usuario',
                               style: TextStyle(
